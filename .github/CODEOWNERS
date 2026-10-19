@@ -1,0 +1,5 @@
+# Code owners — replace placeholder handles with real GitHub usernames.
+
+/pipeline/       @ml-lead-handle
+/web/            @your-handle
+/data-contract/  @your-handle @tech-lead-handle
