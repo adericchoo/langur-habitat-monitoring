@@ -79,7 +79,26 @@ function collectionForYear(year) {
 function makeYearRecord(year) {
   year = ee.Number(year);
   var collection = collectionForYear(year);
-  var composite = collection.median().clip(studyArea);
+  var sceneCount = collection.size();
+
+  var emptyRecord = ee.Feature(null, {
+    year: year,
+    scene_count: sceneCount,
+    mean_ndvi: null,
+    mean_ndmi: null,
+    mean_msavi: null,
+    mean_bsi: null,
+    note: 'No usable Landsat scenes for this year and placeholder area.'
+  });
+
+  var fallback = ee.Image.constant([0, 0, 0, 0, 0, 0])
+    .rename(['blue', 'green', 'red', 'nir', 'swir1', 'swir2']);
+
+  var composite = ee.Image(ee.Algorithms.If(
+    sceneCount.gt(0),
+    collection.median(),
+    fallback
+  )).clip(studyArea);
 
   var ndvi = composite.normalizedDifference(['nir', 'red']).rename('ndvi');
   var ndmi = composite.normalizedDifference(['nir', 'swir1']).rename('ndmi');
@@ -104,15 +123,21 @@ function makeYearRecord(year) {
     maxPixels: 1e10
   });
 
-  return ee.Feature(null, {
+  var populatedRecord = ee.Feature(null, {
     year: year,
-    scene_count: collection.size(),
+    scene_count: sceneCount,
     mean_ndvi: stats.get('ndvi'),
     mean_ndmi: stats.get('ndmi'),
     mean_msavi: stats.get('msavi'),
     mean_bsi: stats.get('bsi'),
     note: 'Public screening template; not a validated habitat label.'
   });
+
+  return ee.Feature(ee.Algorithms.If(
+    sceneCount.gt(0),
+    populatedRecord,
+    emptyRecord
+  ));
 }
 
 var timeSeriesSummary = ee.FeatureCollection(years.map(makeYearRecord));
