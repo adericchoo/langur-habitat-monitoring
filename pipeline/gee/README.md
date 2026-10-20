@@ -15,9 +15,14 @@ in `scripts/asset_config.example.js` for local authorised work.
 - Landsat 2000–2025 full-year and season-matched change screening
 - GLiM/WOKAM geology-led karst-likelihood screening
 - AlphaEarth exploratory similarity baseline
+- Public-safe historical Landsat time-series template (1985–2025)
 
 These are screening products. They are not confirmed habitat, karst, quarry,
 or forest-loss labels.
+
+The current public template is documented in [`HANDOFF.md`](HANDOFF.md). The
+authorised historical run must use the official SVW range in the private GEE
+project; do not replace the public placeholder with sensitive geometry here.
 
 ## Required exports
 
