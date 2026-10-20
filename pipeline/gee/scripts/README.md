@@ -14,6 +14,7 @@ the GitHub repository is private.
 | 11 AlphaEarth baseline | private-only | references private current-langur areas |
 | 12 private validation | private-only | explicitly uses sensitive validation areas |
 | 13 karst likelihood V1 | private-only until assets are templated | references project asset paths |
+| public historical time-series template | committed | coarse placeholder only; no private assets |
 
 When the repository is private, the full authorised scripts can be added here
 after review. Do not commit raw shapefiles, GeoTIFFs, precise coordinates, or
