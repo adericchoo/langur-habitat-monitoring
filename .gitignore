@@ -7,6 +7,8 @@ data/
 *.dbf
 *.prj
 *.gpkg
+# Local Earth Engine configuration may contain private asset IDs.
+pipeline/gee/scripts/asset_config.local.js
 # secrets
 .env
 .env.*

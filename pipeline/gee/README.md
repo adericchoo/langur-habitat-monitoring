@@ -4,6 +4,10 @@ This directory documents the GEE-side processing for the habitat-monitoring
 pipeline. The live scripts remain in the authorised Earth Engine project; do
 not copy private assets or precise langur records into this public repository.
 
+The current public-safe script boundary is documented in
+[`scripts/README.md`](scripts/README.md). Use the placeholder asset configuration
+in `scripts/asset_config.example.js` for local authorised work.
+
 ## Current baseline
 
 - Sentinel-2 2025 cloud-masked composite and display-ready true-colour export
