@@ -15,6 +15,11 @@ where it is fragmenting, and where langurs are most at risk.
 - **`web/`** — React + Vite + MapLibre frontend that visualizes the layers and reports.
 - **`data-contract/`** — shared JSON schema for the data exchanged between the two.
 
+New contributors should start with [`docs/PROJECT_GUIDE.md`](docs/PROJECT_GUIDE.md),
+then read [`SECURITY.md`](SECURITY.md) and the GEE
+[`HANDOFF.md`](pipeline/gee/HANDOFF.md). The guide explains the branches, current
+progress, privacy boundary and how to continue safely.
+
 ## Getting started
 
 1. Copy `.env.example` to `.env` and fill in your values (the real `.env` is git-ignored).
