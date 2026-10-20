@@ -84,7 +84,7 @@ function makeYearRecord(year) {
   var ndvi = composite.normalizedDifference(['nir', 'red']).rename('ndvi');
   var ndmi = composite.normalizedDifference(['nir', 'swir1']).rename('ndmi');
   var msavi = composite.expression(
-    '(2 * NIR + 1 - sqrt((2 * NIR + 1) ** 2 - 8 * (NIR - RED))) / 2',
+    '(2 * NIR + 1 - sqrt((2 * NIR + 1) * (2 * NIR + 1) - 8 * (NIR - RED))) / 2',
     {NIR: composite.select('nir'), RED: composite.select('red')})
     .rename('msavi');
   var bsi = composite.expression(
