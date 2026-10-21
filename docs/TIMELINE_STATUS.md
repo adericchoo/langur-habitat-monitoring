@@ -9,7 +9,7 @@ habitat maps.
 
 ## At a glance
 
-The GEE work is approximately at **late W6 / beginning of W7**. The W6
+The GEE work is approximately at **completed W6 / beginning of W7**. The W6
 Sentinel-2 exports are complete. The next dependency is labelled training and
 validation polygons for the first prototype classifier.
 
@@ -25,6 +25,8 @@ validation polygons for the first prototype classifier.
 - Raw Sentinel-2 bands were exported for internal analysis.
 - Official SVW range, geology and preliminary condition layers were inspected.
 - Export destination is the Google Drive folder `Earth Engine Exports`.
+- The six 2025 W6 outputs are visible in Drive: true colour, NDVI, NDMI, MSAVI,
+  BSI and raw Sentinel-2 bands.
 
 **Remaining**
 
@@ -40,11 +42,14 @@ validation polygons for the first prototype classifier.
 - Historical Landsat screening exists for 2000–2025.
 - A public-safe historical template covers 1985–2025.
 - 09A/09B/09C screening outputs provide initial change evidence.
+- A private numbered `10b_historical_basemap_indices_2000_2025.js` script has
+  been prepared locally for per-year Landsat basemap/index exports.
 
 **Remaining**
 
 - Produce consistent per-year records, primarily for 2000, 2005, 2010,
   2015, 2020 and 2025.
+- Run the private 10B export tasks and verify the resulting rasters and CSV.
 - Complete training and independent validation samples.
 - Train, fine-tune and compare the classifier across years.
 - Produce initial habitat-loss, area-change and confidence summaries.
