@@ -1,6 +1,6 @@
 # GEE handoff — verified progress
 
-Updated 2026-10-21 from the authorised Earth Engine project. This file is a
+Updated 2026-10-22 from the authorised Earth Engine project. This file is a
 handoff summary, not a replacement for the live GEE scripts.
 
 ## Public-safe work completed
@@ -14,6 +14,17 @@ handoff summary, not a replacement for the live GEE scripts.
   in `Earth Engine Exports`.
 - The script includes a no-scene fallback so years without usable imagery do
   not fail with `Image.select` on an empty image.
+
+## Latest W6/W7 progress
+
+- The six 2025 W6 exports completed in `Earth Engine Exports`: true colour,
+  NDVI, NDMI, MSAVI, BSI and raw Sentinel-2 bands.
+- A private numbered `10b_historical_basemap_indices_2000_2025.js` script was
+  prepared locally. It uses the official SVW current range and creates annual
+  true-colour, NDVI, NDMI, MSAVI, BSI and summary-CSV tasks for 2000, 2005,
+  2010, 2015, 2020 and 2025. Optional context years 1985, 1990 and 1995 can
+  be enabled in the script.
+- The private 10B script is intentionally not committed to this public repo.
 
 ## Verified private GEE results (not committed here)
 
@@ -39,22 +50,22 @@ public historical template deliberately uses a coarse placeholder rectangle.
 
 ## Next GEE steps
 
-1. Create a private historical time-series script by replacing the public
-   placeholder with the authorised SVW current-range asset while preserving the
-   1985–2025 years and no-scene fallback.
-2. Run and privately export the historical summary CSV to `Earth Engine
-   Exports`; record collection IDs, date windows, scale, CRS and run date.
-3. Export the verified 09C consensus summary and 13 karst-likelihood summary
+1. Copy/run the private 10B script in the authorised GEE project.
+2. Run and privately export the historical summary CSV and per-year rasters to
+   `Earth Engine Exports`; record collection IDs, date windows, scale, CRS and
+   run date.
+3. Draw training and separate validation polygons for the first classifier.
+4. Export the verified 09C consensus summary and 13 karst-likelihood summary
    privately.
-4. Prepare spatially independent ground-truth polygons before training any
+5. Prepare spatially independent ground-truth polygons before training any
    segmentation classifier; report a confusion matrix and class-wise precision
    and recall.
-5. Then build fragmentation/connectivity and risk metrics for the frontend data
+6. Then build fragmentation/connectivity and risk metrics for the frontend data
    contract. Do not publish a classifier or risk layer until validation is
    documented.
 
 ## GitHub continuation
 
-Current branch: `gee/D1-baseline-exports`. The public-safe commits are pushed
-to the remote and should be reviewed before merging. Continue private work on a
-private branch/repository; do not copy the full scripts into this public branch.
+The public-safe documentation is maintained on `main`. Continue private GEE
+work in the authorised Earth Engine project or a private repository; do not
+copy the full 10B script or private asset references into this public repo.
