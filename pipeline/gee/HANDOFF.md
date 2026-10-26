@@ -61,8 +61,9 @@ public historical template deliberately uses a coarse placeholder rectangle.
    segmentation classifier; report a confusion matrix and class-wise precision
    and recall.
 6. Then build fragmentation/connectivity and risk metrics for the frontend data
-   contract. Do not publish a classifier or risk layer until validation is
-   documented.
+   contract. In parallel, define the policy-to-metric matching framework and
+   report-generation algorithm. Do not publish a classifier or risk layer until
+   validation is documented.
 
 ## GitHub continuation
 
