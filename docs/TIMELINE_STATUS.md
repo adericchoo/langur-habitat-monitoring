@@ -65,6 +65,8 @@ validation polygons for the first prototype classifier.
 
 - Finalise area, net-loss, rate and change-matrix definitions.
 - Build the policy evidence bank and matching framework.
+- Define the policy-to-metric matching rules, including inputs, thresholds,
+  evidence links and limitations.
 - Confirm the frontend layer schema, units, palettes and metadata.
 
 ### W9 — reports, fragmentation and corridors
@@ -78,7 +80,9 @@ validation polygons for the first prototype classifier.
 
 - Calculate fragmentation and connectivity metrics.
 - Define and test corridor/least-cost analysis if reference data supports it.
-- Build the report-generation framework.
+- Build the report-generation framework and report-generation algorithm.
+- Define report templates for incident, policy-reform and annual reports.
+- Specify how pinned map figures and selected metrics become report sections.
 - Wire approved loss and fragmentation outputs into frontend staging.
 
 ### W10 — risk and integration
