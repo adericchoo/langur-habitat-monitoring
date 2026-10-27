@@ -15,8 +15,10 @@ export interface StepperProps {
  */
 export default function Stepper({ steps, activeSlug, onSelect, logo }: StepperProps) {
   return (
-    <footer className="flex items-center gap-2 border-t border-brd bg-card px-4 py-3 font-sans">
-      <nav className="flex flex-1 flex-wrap items-center gap-1 sm:gap-2">
+    <footer className="flex items-center justify-between gap-2 border-t border-brd bg-card px-4 py-3 font-sans">
+      {/* `contents` lets the step buttons sit as direct flex children of the
+          footer, so justify-between spreads them evenly — logo included. */}
+      <nav className="contents">
         {steps.map((step, i) => {
           const active = step.slug === activeSlug
           return (
@@ -43,7 +45,7 @@ export default function Stepper({ steps, activeSlug, onSelect, logo }: StepperPr
           )
         })}
       </nav>
-      {logo ? <div className="ml-auto flex shrink-0 items-center pl-2">{logo}</div> : null}
+      {logo ? <div className="flex shrink-0 items-center">{logo}</div> : null}
     </footer>
   )
 }
