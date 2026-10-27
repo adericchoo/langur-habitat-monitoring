@@ -1,0 +1,40 @@
+/* =====================================================================
+   Langur Habitat Monitoring — Design Tokens (source of truth)
+   Imported ONCE at app entry (src/main.tsx): import "./styles/design-tokens.css"
+   Hybrid brand: AI for Good for UI/chrome, earth tones for map highlights.
+   ===================================================================== */
+
+:root {
+  /* ---- AI for Good brand (UI / sidebar / chrome) ---- */
+  --color-navy:        #18144B;  /* primary ink, titles, featured cards, buttons */
+  --color-teal:        #42B39F;  /* primary accent, active step, pins, eyebrows  */
+  --color-magenta:     #ED1476;  /* sparing highlight — ONE accent value per view */
+  --color-ink:         #18144B;  /* body text on light                           */
+  --color-secondary:   #4B4870;  /* soft / muted text, subtitles, labels         */
+  --color-bg-offwhite: #F7F7FA;  /* sidebar + app surface                        */
+  --color-card-white:  #FFFFFF;  /* cards, boxes                                 */
+  --color-border:      #DCDBE6;  /* hairlines, dividers, inactive outlines       */
+  --color-teal-tint:   #E4F2EE;  /* pills, pinned chips, subtle fills            */
+  --color-navy-tint:   #B9B7CF;  /* meter tracks, faint navy                     */
+
+  /* ---- Map highlights ONLY (earth tones — do not use for UI) ----
+     TODO: confirm exact hexes against the Figma map callouts. */
+  --map-habitat:   #2E7D5B;  /* intact habitat / forest (green)        */
+  --map-loss:      #C65A3A;  /* clearing / loss front (terracotta)     */
+  --map-partial:   #E0A43B;  /* partial corridor / degraded (amber)    */
+  --map-threat:    #9E4A2E;  /* quarry / threat site (deep terracotta) */
+  --map-boundary:  #18144B;  /* protected-area outlines (navy)         */
+
+  /* ---- Type ---- */
+  --font-sans: "Montserrat", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* ---- Spacing / radius (optional, keep components consistent) ---- */
+  --radius-card: 12px;
+  --radius-pill: 999px;
+}
+
+/* Optional dark mode — fill in when you build the dark variant.
+@media (prefers-color-scheme: dark) {
+  :root { ... }
+}
+*/
