@@ -3,11 +3,12 @@ import App from './App'
 import StepPlaceholder from './pages/StepPlaceholder'
 import HabitatLossStep from './pages/HabitatLossStep'
 import FragmentationStep from './pages/FragmentationStep'
+import HabitatRiskStep from './pages/HabitatRiskStep'
 import Gallery from './pages/Gallery'
 import { STEPS } from './steps'
 
 // Steps with a real page; everything else still renders the placeholder.
-const BUILT = new Set(['habitat-loss', 'fragmentation'])
+const BUILT = new Set(['habitat-loss', 'fragmentation', 'habitat-risk'])
 
 export const router = createBrowserRouter([
   {
@@ -17,6 +18,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to={STEPS[0].slug} replace /> },
       { path: 'habitat-loss', element: <HabitatLossStep /> },
       { path: 'fragmentation', element: <FragmentationStep /> },
+      { path: 'habitat-risk', element: <HabitatRiskStep /> },
       ...STEPS.filter((step) => !BUILT.has(step.slug)).map((step) => ({
         path: step.slug,
         element: <StepPlaceholder />,

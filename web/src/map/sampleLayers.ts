@@ -123,6 +123,69 @@ export const corridorSample: FeatureCollection = {
   ],
 }
 
+/**
+ * Per-site habitat-risk regions, each classed high / med / low. SAMPLE tier —
+ * synthetic polygons over the general region; composite risk is upstream TODO.
+ * The `riskLevel` property is the contract point: MapStage's risk paint `match`
+ * and the risk legend both key on it (mirrors the corridor `status` pattern).
+ */
+export const riskSample: FeatureCollection = {
+  type: 'FeatureCollection',
+  features: [
+    {
+      type: 'Feature',
+      properties: { riskLevel: 'low', label: 'North ridge — low (sample)' },
+      geometry: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [105.72, 20.98],
+            [105.86, 21.0],
+            [105.9, 20.9],
+            [105.8, 20.84],
+            [105.7, 20.9],
+            [105.72, 20.98],
+          ],
+        ],
+      },
+    },
+    {
+      type: 'Feature',
+      properties: { riskLevel: 'high', label: 'Southern spur — high (sample)' },
+      geometry: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [105.94, 20.86],
+            [106.02, 20.88],
+            [106.04, 20.8],
+            [105.96, 20.78],
+            [105.92, 20.82],
+            [105.94, 20.86],
+          ],
+        ],
+      },
+    },
+    {
+      type: 'Feature',
+      properties: { riskLevel: 'med', label: 'Kim Bang block — med (sample)' },
+      geometry: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [105.86, 20.82],
+            [105.94, 20.84],
+            [105.96, 20.74],
+            [105.86, 20.72],
+            [105.82, 20.78],
+            [105.86, 20.82],
+          ],
+        ],
+      },
+    },
+  ],
+}
+
 export const driverSample: FeatureCollection = {
   type: 'FeatureCollection',
   features: [
