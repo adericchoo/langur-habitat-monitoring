@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import App from './App'
 import StepPlaceholder from './pages/StepPlaceholder'
+import Gallery from './pages/Gallery'
 import { STEPS } from './steps'
 
 export const router = createBrowserRouter([
@@ -15,4 +16,6 @@ export const router = createBrowserRouter([
       })),
     ],
   },
+  // Isolated component gallery (C3) — standalone, outside the app shell.
+  { path: '/gallery', element: <Gallery /> },
 ])
