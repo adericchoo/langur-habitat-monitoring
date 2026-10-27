@@ -13,9 +13,13 @@ export interface SummaryMetric {
   limitations: string
 }
 
-export interface HabitatLossSite {
+/** A study area with its metric rows — the common shape every metric-driven
+ *  step consumes (habitat loss, fragmentation, …). Each row is contract-shaped. */
+export interface MetricSite {
   id: string
   name: string
-  /** Metric rows for this site, each shaped to the summary contract. */
   metrics: SummaryMetric[]
 }
+
+/** Step 01 habitat-loss sites. Alias of MetricSite kept for D1's call sites. */
+export type HabitatLossSite = MetricSite
