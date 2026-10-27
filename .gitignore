@@ -14,11 +14,16 @@ pipeline/gee/scripts/asset_config.local.js
 .env.*
 !.env.example
 *-service-account*.json
+
 # python
 __pycache__/
 *.pyc
 .venv/
 .ipynb_checkpoints/
+
+# notes
+CLAUDE.md
+BUILD_CHECKLIST.md
 
 # Logs
 logs
