@@ -10,14 +10,14 @@ export interface MapLegendProps {
 }
 
 /**
- * Small overlay legend (bottom-left) for the active map classes. Generic: the
- * caller supplies the title and colored items, so F1's risk legend can reuse it.
- * Renders nothing when there are no items.
+ * Small legend card for the active map classes. Generic: the caller supplies the
+ * title and colored items (corridors, risk, …). Positioning is the parent's job
+ * (MapStage stacks these), so this is a plain card. Renders nothing when empty.
  */
 export default function MapLegend({ title, items }: MapLegendProps) {
   if (items.length === 0) return null
   return (
-    <div className="absolute bottom-3 left-3 z-10 rounded-card border border-brd bg-card p-3 font-sans shadow-sm">
+    <div className="min-w-[9rem] rounded-card border border-brd bg-card p-3 font-sans shadow-sm">
       <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-secondary">{title}</p>
       <ul className="space-y-1.5">
         {items.map((item) => (
