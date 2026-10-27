@@ -23,3 +23,13 @@ export interface MetricSite {
 
 /** Step 01 habitat-loss sites. Alias of MetricSite kept for D1's call sites. */
 export type HabitatLossSite = MetricSite
+
+/** Habitat-risk class. Derived upstream from the composite risk score (0–1);
+ *  screening-grade, never a confirmed threat. Keyed by the map paint + legend. */
+export type RiskLevel = 'high' | 'med' | 'low'
+
+/** A site with a risk class plus its contract-shaped score rows (composite_risk
+ *  0–1 and any sub-scores). Composite risk is upstream TODO — sample for now. */
+export interface RiskSite extends MetricSite {
+  level: RiskLevel
+}
