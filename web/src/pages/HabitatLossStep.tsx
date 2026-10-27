@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import Sidebar from '../components/Sidebar'
 import MetricCard, { type MetricCardVariant } from '../components/MetricCard'
+import { usePins } from '../report/pins'
 import { habitatLossSites } from '../samples/habitatLoss'
 import type { HabitatLossSite } from '../types/contract'
 
@@ -34,14 +35,12 @@ const fmt = (value: number) =>
  *  local to this step for D1 (H1 lifts them to a shared store). */
 export default function HabitatLossStep() {
   const [siteId, setSiteId] = useState(habitatLossSites[0].id)
-  const [pins, setPins] = useState<Record<string, boolean>>({})
+  const { isPinned, toggle, count } = usePins()
 
   const site: HabitatLossSite =
     habitatLossSites.find((s) => s.id === siteId) ?? habitatLossSites[0]
 
   const valueOf = (metric: string) => site.metrics.find((x) => x.metric === metric)
-  const togglePin = (key: string) => setPins((prev) => ({ ...prev, [key]: !prev[key] }))
-  const pinnedCount = useMemo(() => Object.values(pins).filter(Boolean).length, [pins])
 
   const drivers = DRIVERS.map((d) => ({ label: d.label, pct: valueOf(d.metric)?.value ?? 0 }))
 
@@ -52,7 +51,7 @@ export default function HabitatLossStep() {
       subtitle="overall status · 2000–2026 · screening"
       headerAction={
         <span className="rounded-pill bg-teal-tint px-2.5 py-0.5 text-xs font-semibold text-teal">
-          Report · {pinnedCount} pinned
+          Report · {count} pinned
         </span>
       }
     >
@@ -77,6 +76,7 @@ export default function HabitatLossStep() {
         {CARD_SPECS.map((spec) => {
           const metricRow = valueOf(spec.metric)
           if (!metricRow) return null
+          const id = `habitat-loss:${site.id}:${spec.key}`
           return (
             <MetricCard
               key={spec.key}
@@ -85,8 +85,17 @@ export default function HabitatLossStep() {
               value={fmt(metricRow.value)}
               unit={metricRow.unit}
               caption={spec.caption}
-              pinned={!!pins[spec.key]}
-              onTogglePin={() => togglePin(spec.key)}
+              pinned={isPinned(id)}
+              onTogglePin={() =>
+                toggle({
+                  id,
+                  step: 'habitat-loss',
+                  label: spec.label,
+                  value: fmt(metricRow.value),
+                  unit: metricRow.unit,
+                  detail: site.name,
+                })
+              }
             />
           )
         })}
