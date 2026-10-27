@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react'
 import Map, { Layer, Source } from 'react-map-gl/maplibre'
 import type { LayerProps } from 'react-map-gl/maplibre'
 import LayerControl, { type LayerToggle } from './LayerControl'
+import MapLegend from './MapLegend'
 import { getMapColors, type MapColors } from '../map/mapColors'
-import { driverSample, habitatSample, protectedAreaSample } from '../map/sampleLayers'
+import { corridorSample, driverSample, habitatSample, protectedAreaSample } from '../map/sampleLayers'
 
 // Layer paint builders — map highlights use the --map-* earth-tone tokens only
 // (never brand colours), resolved from design-tokens.css via getMapColors().
@@ -23,6 +24,26 @@ const paOutline = (color: string): LayerProps => ({
   id: 'pa-line',
   type: 'line',
   paint: { 'line-color': color, 'line-width': 2, 'line-dasharray': [2, 1] },
+})
+
+// Corridors coloured by their connectivity status. Keying the paint on the
+// `status` property (not per-feature colours) is the contract seam: real
+// pipeline corridors render unchanged as long as they carry the same statuses.
+const corridorLine = (colors: MapColors): LayerProps => ({
+  id: 'corridor-line',
+  type: 'line',
+  paint: {
+    'line-width': 3,
+    'line-color': [
+      'match',
+      ['get', 'status'],
+      'intact',
+      colors.habitat,
+      'partial',
+      colors.partial,
+      /* lost */ colors.loss,
+    ],
+  },
 })
 
 const driverCircles = (colors: MapColors): LayerProps => ({
@@ -53,6 +74,7 @@ export default function MapStage() {
   const colors = useMemo(() => getMapColors(), [])
   const [layers, setLayers] = useState<LayerToggle[]>([
     { id: 'habitat', label: 'Habitat', enabled: true },
+    { id: 'corridors', label: 'Corridors', enabled: true },
     { id: 'pa', label: 'Protected areas', enabled: true },
     { id: 'drivers', label: 'Drivers', enabled: true },
   ])
@@ -74,6 +96,11 @@ export default function MapStage() {
             <Layer {...habitatOutline(colors.habitat)} />
           </Source>
         )}
+        {isOn('corridors') && (
+          <Source id="corridors" type="geojson" data={corridorSample}>
+            <Layer {...corridorLine(colors)} />
+          </Source>
+        )}
         {isOn('pa') && (
           <Source id="pa" type="geojson" data={protectedAreaSample}>
             <Layer {...paOutline(colors.boundary)} />
@@ -86,6 +113,16 @@ export default function MapStage() {
         )}
       </Map>
       <LayerControl layers={layers} onToggle={toggle} />
+      {isOn('corridors') && (
+        <MapLegend
+          title="Corridors"
+          items={[
+            { label: 'Intact', color: colors.habitat },
+            { label: 'Partial', color: colors.partial },
+            { label: 'Lost', color: colors.loss },
+          ]}
+        />
+      )}
     </div>
   )
 }
