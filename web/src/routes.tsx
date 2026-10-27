@@ -2,8 +2,12 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import App from './App'
 import StepPlaceholder from './pages/StepPlaceholder'
 import HabitatLossStep from './pages/HabitatLossStep'
+import FragmentationStep from './pages/FragmentationStep'
 import Gallery from './pages/Gallery'
 import { STEPS } from './steps'
+
+// Steps with a real page; everything else still renders the placeholder.
+const BUILT = new Set(['habitat-loss', 'fragmentation'])
 
 export const router = createBrowserRouter([
   {
@@ -12,7 +16,8 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to={STEPS[0].slug} replace /> },
       { path: 'habitat-loss', element: <HabitatLossStep /> },
-      ...STEPS.filter((step) => step.slug !== 'habitat-loss').map((step) => ({
+      { path: 'fragmentation', element: <FragmentationStep /> },
+      ...STEPS.filter((step) => !BUILT.has(step.slug)).map((step) => ({
         path: step.slug,
         element: <StepPlaceholder />,
       })),
