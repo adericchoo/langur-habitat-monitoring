@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
 import Sidebar from '../components/Sidebar'
 import RiskBadge from '../components/RiskBadge'
+import { usePins } from '../report/pins'
 import { habitatRiskSites } from '../samples/habitatRisk'
 import type { RiskSite } from '../types/contract'
 
@@ -15,9 +15,7 @@ const scoreOf = (site: RiskSite) =>
  *  risk class + composite score; the map highlights the same sites by class.
  *  Pins are local to this step for F1 (H1 lifts them to a shared store). */
 export default function HabitatRiskStep() {
-  const [pins, setPins] = useState<Record<string, boolean>>({})
-  const togglePin = (id: string) => setPins((prev) => ({ ...prev, [id]: !prev[id] }))
-  const pinnedCount = useMemo(() => Object.values(pins).filter(Boolean).length, [pins])
+  const { isPinned, toggle, count } = usePins()
 
   return (
     <Sidebar
@@ -26,20 +24,32 @@ export default function HabitatRiskStep() {
       subtitle="composite likelihood · screening · upstream TODO"
       headerAction={
         <span className="rounded-pill bg-teal-tint px-2.5 py-0.5 text-xs font-semibold text-teal">
-          Report · {pinnedCount} pinned
+          Report · {count} pinned
         </span>
       }
     >
       <div className="space-y-3">
-        {sortedSites.map((site) => (
-          <RiskRow
-            key={site.id}
-            site={site}
-            score={scoreOf(site)}
-            pinned={!!pins[site.id]}
-            onTogglePin={() => togglePin(site.id)}
-          />
-        ))}
+        {sortedSites.map((site) => {
+          const id = `habitat-risk:${site.id}`
+          const score = scoreOf(site)
+          return (
+            <RiskRow
+              key={site.id}
+              site={site}
+              score={score}
+              pinned={isPinned(id)}
+              onTogglePin={() =>
+                toggle({
+                  id,
+                  step: 'habitat-risk',
+                  label: site.name,
+                  value: score.toFixed(2),
+                  detail: `${site.level} risk`,
+                })
+              }
+            />
+          )
+        })}
       </div>
 
       <p className="mt-4 text-xs text-secondary">

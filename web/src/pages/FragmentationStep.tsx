@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import Sidebar from '../components/Sidebar'
 import MetricCard, { type MetricCardVariant } from '../components/MetricCard'
+import { usePins } from '../report/pins'
 import { fragmentationSites } from '../samples/fragmentation'
 import type { MetricSite } from '../types/contract'
 
@@ -29,14 +30,12 @@ const fmt = (value: number) =>
  *  on the map are E2, not this step. Sample data — metrics are upstream TODO. */
 export default function FragmentationStep() {
   const [siteId, setSiteId] = useState(fragmentationSites[0].id)
-  const [pins, setPins] = useState<Record<string, boolean>>({})
+  const { isPinned, toggle, count } = usePins()
 
   const site: MetricSite =
     fragmentationSites.find((s) => s.id === siteId) ?? fragmentationSites[0]
 
   const valueOf = (metric: string) => site.metrics.find((x) => x.metric === metric)
-  const togglePin = (key: string) => setPins((prev) => ({ ...prev, [key]: !prev[key] }))
-  const pinnedCount = useMemo(() => Object.values(pins).filter(Boolean).length, [pins])
 
   return (
     <Sidebar
@@ -45,7 +44,7 @@ export default function FragmentationStep() {
       subtitle="landscape structure · screening · upstream TODO"
       headerAction={
         <span className="rounded-pill bg-teal-tint px-2.5 py-0.5 text-xs font-semibold text-teal">
-          Report · {pinnedCount} pinned
+          Report · {count} pinned
         </span>
       }
     >
@@ -70,6 +69,7 @@ export default function FragmentationStep() {
         {CARD_SPECS.map((spec) => {
           const metricRow = valueOf(spec.metric)
           if (!metricRow) return null
+          const id = `fragmentation:${site.id}:${spec.key}`
           return (
             <MetricCard
               key={spec.key}
@@ -78,8 +78,17 @@ export default function FragmentationStep() {
               value={fmt(metricRow.value)}
               unit={metricRow.unit}
               caption={spec.caption}
-              pinned={!!pins[spec.key]}
-              onTogglePin={() => togglePin(spec.key)}
+              pinned={isPinned(id)}
+              onTogglePin={() =>
+                toggle({
+                  id,
+                  step: 'fragmentation',
+                  label: spec.label,
+                  value: fmt(metricRow.value),
+                  unit: metricRow.unit,
+                  detail: site.name,
+                })
+              }
             />
           )
         })}
