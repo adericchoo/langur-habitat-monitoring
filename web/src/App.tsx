@@ -18,7 +18,7 @@ export default function App() {
     <div className="flex h-full flex-col">
       <div className="flex min-h-0 flex-1">
         <main className="min-w-0 flex-1">
-          <MapStage />
+          <MapStage activeStep={activeSlug} />
         </main>
         <div className="w-[380px] shrink-0 border-l border-brd">
           <Outlet />
