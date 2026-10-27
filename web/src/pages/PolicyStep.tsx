@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import Sidebar from '../components/Sidebar'
 import PolicyBox from '../components/PolicyBox'
+import { usePins } from '../report/pins'
 import { habitatLossSites } from '../samples/habitatLoss'
 import { policyBank, type PolicyDriver } from '../samples/policyBank'
 
@@ -27,9 +28,7 @@ const MIN_SHARE = 0
  *  per-step site selection becomes shared state then too. */
 export default function PolicyStep() {
   const [siteId, setSiteId] = useState(habitatLossSites[0].id)
-  const [pins, setPins] = useState<Record<string, boolean>>({})
-  const togglePin = (id: string) => setPins((prev) => ({ ...prev, [id]: !prev[id] }))
-  const pinnedCount = useMemo(() => Object.values(pins).filter(Boolean).length, [pins])
+  const { isPinned, toggle, count } = usePins()
 
   const site = habitatLossSites.find((s) => s.id === siteId) ?? habitatLossSites[0]
 
@@ -53,7 +52,7 @@ export default function PolicyStep() {
       subtitle="interventions matched to detected drivers · sample bank"
       headerAction={
         <span className="rounded-pill bg-teal-tint px-2.5 py-0.5 text-xs font-semibold text-teal">
-          Report · {pinnedCount} pinned
+          Report · {count} pinned
         </span>
       }
     >
@@ -83,19 +82,29 @@ export default function PolicyStep() {
               <h2 className="text-xs font-semibold uppercase tracking-wide text-secondary">
                 {DRIVER_LABEL[driver]} · {share}% of suspected loss
               </h2>
-              {items.map((policy) => (
-                <PolicyBox
-                  key={policy.id}
-                  name={policy.name}
-                  country={policy.country}
-                  description={policy.description}
-                  source={policy.source}
-                  howItFits={policy.howItFits}
-                  limitations={policy.limitations}
-                  pinned={!!pins[policy.id]}
-                  onTogglePin={() => togglePin(policy.id)}
-                />
-              ))}
+              {items.map((policy) => {
+                const id = `policy:${policy.id}`
+                return (
+                  <PolicyBox
+                    key={policy.id}
+                    name={policy.name}
+                    country={policy.country}
+                    description={policy.description}
+                    source={policy.source}
+                    howItFits={policy.howItFits}
+                    limitations={policy.limitations}
+                    pinned={isPinned(id)}
+                    onTogglePin={() =>
+                      toggle({
+                        id,
+                        step: 'policy',
+                        label: policy.name,
+                        detail: policy.country,
+                      })
+                    }
+                  />
+                )
+              })}
             </section>
           )
         })}
