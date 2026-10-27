@@ -75,6 +75,54 @@ export const protectedAreaSample: FeatureCollection = {
   ],
 }
 
+/**
+ * Corridors between habitat patches, each classed intact / partial / lost.
+ * SAMPLE tier — synthetic LineStrings over the general region; corridor /
+ * connectivity data is upstream TODO (see HANDOFF). The `status` property is the
+ * contract point: MapStage's paint `match` and the legend both key on it.
+ */
+export const corridorSample: FeatureCollection = {
+  type: 'FeatureCollection',
+  features: [
+    {
+      type: 'Feature',
+      properties: { status: 'intact', label: 'Corridor — intact (sample)' },
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          [105.8, 20.84],
+          [105.85, 20.9],
+          [105.86, 21.0],
+        ],
+      },
+    },
+    {
+      type: 'Feature',
+      properties: { status: 'partial', label: 'Corridor — partial (sample)' },
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          [105.9, 20.9],
+          [105.93, 20.86],
+          [105.94, 20.86],
+        ],
+      },
+    },
+    {
+      type: 'Feature',
+      properties: { status: 'lost', label: 'Corridor — lost (sample)' },
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          [105.96, 20.78],
+          [105.9, 20.76],
+          [105.84, 20.78],
+        ],
+      },
+    },
+  ],
+}
+
 export const driverSample: FeatureCollection = {
   type: 'FeatureCollection',
   features: [
