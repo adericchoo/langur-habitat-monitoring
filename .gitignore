@@ -7,6 +7,11 @@ data/
 *.dbf
 *.prj
 *.gpkg
+# Derived basemap imagery (generated locally from the GEE export; large binaries,
+# never committed). Includes the reprojected COG/GeoTIFFs and the gdal2tiles PNG
+# pyramid. The .tif/.tiff rules above already cover the rasters; this covers the
+# PNG tiles too.
+web/public/basemap/
 # Local Earth Engine configuration may contain private asset IDs.
 pipeline/gee/scripts/asset_config.local.js
 # secrets

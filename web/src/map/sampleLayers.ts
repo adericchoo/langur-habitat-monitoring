@@ -52,28 +52,8 @@ export const habitatSample: FeatureCollection = {
   ],
 }
 
-export const protectedAreaSample: FeatureCollection = {
-  type: 'FeatureCollection',
-  features: [
-    {
-      type: 'Feature',
-      properties: { name: 'Protected area (sample)' },
-      geometry: {
-        type: 'Polygon',
-        coordinates: [
-          [
-            [105.68, 21.04],
-            [105.98, 21.06],
-            [106.06, 20.82],
-            [105.86, 20.72],
-            [105.64, 20.86],
-            [105.68, 21.04],
-          ],
-        ],
-      },
-    },
-  ],
-}
+// Protected areas now come from real (public, WDPA) boundaries in
+// protectedAreas.json — see MapStage. The synthetic PA sample was removed.
 
 /**
  * Corridors between habitat patches, each classed intact / partial / lost.
@@ -85,38 +65,41 @@ export const corridorSample: FeatureCollection = {
   type: 'FeatureCollection',
   features: [
     {
+      // Kim Bang ↔ Huong Son — adjacent patches, link still closed.
       type: 'Feature',
       properties: { status: 'intact', label: 'Corridor — intact (sample)' },
       geometry: {
         type: 'LineString',
         coordinates: [
-          [105.8, 20.84],
-          [105.85, 20.9],
-          [105.86, 21.0],
+          [105.835, 20.527],
+          [105.815, 20.545],
+          [105.792, 20.558],
         ],
       },
     },
     {
+      // Van Long ↔ Kim Bang — thinning gap.
       type: 'Feature',
       properties: { status: 'partial', label: 'Corridor — partial (sample)' },
       geometry: {
         type: 'LineString',
         coordinates: [
-          [105.9, 20.9],
-          [105.93, 20.86],
-          [105.94, 20.86],
+          [105.838, 20.44],
+          [105.835, 20.465],
+          [105.83, 20.49],
         ],
       },
     },
     {
+      // Van Long ↔ Hoa Lu / Trang An — crossing broken.
       type: 'Feature',
       properties: { status: 'lost', label: 'Corridor — lost (sample)' },
       geometry: {
         type: 'LineString',
         coordinates: [
-          [105.96, 20.78],
-          [105.9, 20.76],
-          [105.84, 20.78],
+          [105.872, 20.365],
+          [105.885, 20.32],
+          [105.895, 20.29],
         ],
       },
     },
@@ -186,23 +169,25 @@ export const riskSample: FeatureCollection = {
   ],
 }
 
+// Threat points placed inside the coarsened habitat patches (Kim Bang, Cuc
+// Phuong, Van Long) so they read as pressures within suspected habitat.
 export const driverSample: FeatureCollection = {
   type: 'FeatureCollection',
   features: [
     {
       type: 'Feature',
       properties: { kind: 'quarry', label: 'Registered quarry (sample)' },
-      geometry: { type: 'Point', coordinates: [105.88, 20.92] },
+      geometry: { type: 'Point', coordinates: [105.845, 20.52] },
     },
     {
       type: 'Feature',
       properties: { kind: 'clearing', label: 'Suspected clearing (sample)' },
-      geometry: { type: 'Point', coordinates: [105.76, 20.95] },
+      geometry: { type: 'Point', coordinates: [105.6, 20.33] },
     },
     {
       type: 'Feature',
       properties: { kind: 'clearing', label: 'Suspected clearing (sample)' },
-      geometry: { type: 'Point', coordinates: [105.98, 20.83] },
+      geometry: { type: 'Point', coordinates: [105.82, 20.42] },
     },
   ],
 }

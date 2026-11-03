@@ -10,16 +10,18 @@ interface CardSpec {
   metric: string
   label: string
   variant?: MetricCardVariant
-  caption?: string
+  /** Caption string, or a builder that takes the selected display year. */
+  caption?: string | ((year: number) => string)
 }
 
 // Which metrics become cards, in order, with their look + a screening-grade note.
+// Captions that carry a time reference take the selected year.
 const CARD_SPECS: CardSpec[] = [
-  { key: 'remaining', metric: 'habitat_remaining', label: 'Habitat remaining', variant: 'featured', caption: 'suspected extent (screening)' },
-  { key: 'lost', metric: 'habitat_lost', label: 'Lost since 2000', caption: 'class transition, 2000–2026' },
-  { key: 'rate', metric: 'loss_rate', label: 'Loss rate', variant: 'accent', caption: 'screening estimate' },
-  { key: 'quarry', metric: 'quarry_footprint', label: 'Quarry footprint', caption: 'registered extent (sample)' },
-  { key: 'core', metric: 'core_habitat', label: 'Core habitat', caption: 'interior, screening' },
+  { key: 'remaining', metric: 'habitat_remaining', label: 'Habitat remaining', variant: 'featured', caption: (y) => `suspected extent, ${y} (screening)` },
+  { key: 'lost', metric: 'habitat_lost', label: 'Lost since 2000', caption: (y) => `class transition, 2000–${y}` },
+  { key: 'rate', metric: 'loss_rate', label: 'Loss rate', variant: 'accent', caption: (y) => `2000–${y} mean (screening)` },
+  { key: 'quarry', metric: 'quarry_footprint', label: 'Quarry footprint', caption: (y) => `registered extent, ${y} (sample)` },
+  { key: 'core', metric: 'core_habitat', label: 'Core habitat', caption: (y) => `interior, ${y} (screening)` },
 ]
 
 const DRIVERS = [
@@ -35,10 +37,16 @@ const fmt = (value: number) =>
  *  local to this step for D1 (H1 lifts them to a shared store). */
 export default function HabitatLossStep() {
   const [siteId, setSiteId] = useState(habitatLossSites[0].id)
+  const [year, setYear] = useState(() => habitatLossSites[0].metrics[0]?.year_end ?? 2026)
   const { isPinned, toggle, count } = usePins()
 
   const site: HabitatLossSite =
     habitatLossSites.find((s) => s.id === siteId) ?? habitatLossSites[0]
+
+  // Available display years span the loss window (year_start…year_end), newest first.
+  const yearStart = site.metrics[0]?.year_start ?? 2000
+  const yearEnd = site.metrics[0]?.year_end ?? 2026
+  const years = Array.from({ length: yearEnd - yearStart + 1 }, (_, i) => yearEnd - i)
 
   const valueOf = (metric: string) => site.metrics.find((x) => x.metric === metric)
 
@@ -48,7 +56,23 @@ export default function HabitatLossStep() {
     <Sidebar
       eyebrow="Northern Vietnam · Kim Bang"
       title="Habitat loss"
-      subtitle="overall status · 2000–2026 · screening"
+      subtitle={
+        <span className="flex flex-wrap items-center gap-1.5">
+          <span>overall status ·</span>
+          <select
+            value={year}
+            onChange={(e) => setYear(Number(e.target.value))}
+            aria-label="Display year"
+            className="rounded-pill border border-brd bg-card px-2 py-0.5 text-sm font-semibold text-ink"
+          >
+            {years.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+        </span>
+      }
       headerAction={
         <span className="rounded-pill bg-teal-tint px-2.5 py-0.5 text-xs font-semibold text-teal">
           Report · {count} pinned
@@ -77,6 +101,7 @@ export default function HabitatLossStep() {
           const metricRow = valueOf(spec.metric)
           if (!metricRow) return null
           const id = `habitat-loss:${site.id}:${spec.key}`
+          const caption = typeof spec.caption === 'function' ? spec.caption(year) : spec.caption
           return (
             <MetricCard
               key={spec.key}
@@ -84,7 +109,7 @@ export default function HabitatLossStep() {
               label={spec.label}
               value={fmt(metricRow.value)}
               unit={metricRow.unit}
-              caption={spec.caption}
+              caption={caption}
               pinned={isPinned(id)}
               onTogglePin={() =>
                 toggle({
