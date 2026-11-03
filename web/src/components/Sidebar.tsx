@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 export interface SidebarProps {
   eyebrow?: string
   title: string
-  subtitle?: string
+  subtitle?: ReactNode
   /** Optional element pinned top-right of the header (e.g. a "Report · N pinned" chip). */
   headerAction?: ReactNode
   children: ReactNode
