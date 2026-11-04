@@ -29,6 +29,10 @@ __pycache__/
 # notes
 CLAUDE.md
 BUILD_CHECKLIST.md
+# Draft method write-ups — kept local until the team signs off; not for the
+# public repo yet. Matched by basename, so they stay ignored wherever saved.
+corridor-method.md
+habitat-loss-method.md
 
 # Logs
 logs

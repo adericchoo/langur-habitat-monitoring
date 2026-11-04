@@ -4,6 +4,7 @@ export interface MapColors {
   partial: string
   threat: string
   boundary: string
+  paLine: string
 }
 
 // Documented fallbacks (mirror design-tokens.css) for when the CSS vars can't
@@ -14,6 +15,7 @@ const FALLBACK: MapColors = {
   partial: '#E0A43B',
   threat: '#9E4A2E',
   boundary: '#18144B',
+  paLine: '#EDE9DC',
 }
 
 /**
@@ -33,5 +35,6 @@ export function getMapColors(): MapColors {
     partial: read('--map-partial', FALLBACK.partial),
     threat: read('--map-threat', FALLBACK.threat),
     boundary: read('--map-boundary', FALLBACK.boundary),
+    paLine: read('--map-pa-line', FALLBACK.paLine),
   }
 }

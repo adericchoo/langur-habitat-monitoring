@@ -5,15 +5,16 @@ import type { LayerProps } from 'react-map-gl/maplibre'
 import LayerControl, { type LayerToggle } from './LayerControl'
 import MapLegend from './MapLegend'
 import { getMapColors, type MapColors } from '../map/mapColors'
-import { corridorSample, driverSample, riskSample } from '../map/sampleLayers'
+import { corridorSample, driverSample } from '../map/sampleLayers'
 // Real habitat extent: 7 coarsened karst-patch polygons (public-safe — langur
 // presence flag + screening attributes stripped at export; see habitatAreas.geojson).
 // Screening-grade, approximate; label the UI accordingly.
 import habitatAreasJson from '../map/habitatAreas.json'
 const habitatAreas = habitatAreasJson as FeatureCollection
-// Protected areas: 20 gazetted parks/reserves in the langur's historical range,
+// Protected areas: 6 gazetted parks/reserves overlapping the basemap extent,
 // from the public WDPA (World Database on Protected Areas) — non-sensitive
 // reference data. Coarsened to 0.001° on export (see protectedAreas.json).
+// Areas lying entirely outside the 2025 basemap bounds were dropped from the file.
 import protectedAreasJson from '../map/protectedAreas.json'
 const protectedAreas = protectedAreasJson as FeatureCollection
 
@@ -21,9 +22,25 @@ const protectedAreas = protectedAreasJson as FeatureCollection
 // gdal2tiles from the 2025 Sentinel-2 export. PNG tiles carry their own alpha,
 // so the area outside the study polygon is transparent (demotiles shows
 // through) and MapLibre composites them natively — no cog:// reader/decode.
-// Dev serves from web/public/basemap/tiles; prod sets VITE_BASEMAP_TILES to a
-// hosted template. Tiles are gitignored, never committed.
-const BASEMAP_TILES = import.meta.env.VITE_BASEMAP_TILES ?? '/basemap/tiles/{z}/{x}/{y}.png'
+// Dev serves from web/public/basemap/tiles*; prod sets the VITE_* templates to
+// hosted paths. Tiles are gitignored, never committed. One XYZ pyramid per year
+// we actually have imagery for (2000 + 2025 so far); add a row when a new year's
+// tiles land. The sidebar's display year drives which one shows (see below).
+const BASEMAP_TILES_BY_YEAR: Record<number, string> = {
+  2000: import.meta.env.VITE_BASEMAP_TILES_2000 ?? '/basemap/tiles-2000/{z}/{x}/{y}.png',
+  2025: import.meta.env.VITE_BASEMAP_TILES ?? '/basemap/tiles/{z}/{x}/{y}.png',
+}
+const BASEMAP_YEARS = Object.keys(BASEMAP_TILES_BY_YEAR).map(Number).sort((a, b) => a - b)
+const LATEST_BASEMAP_YEAR = BASEMAP_YEARS[BASEMAP_YEARS.length - 1]
+
+// We only have imagery for a few years; snap a requested display year to the
+// nearest one that exists (ties go to the earlier year).
+function resolveBasemapYear(year: number): number {
+  return BASEMAP_YEARS.reduce(
+    (best, y) => (Math.abs(y - year) < Math.abs(best - year) ? y : best),
+    BASEMAP_YEARS[0],
+  )
+}
 
 // Geographic extent of the tiled imagery [west, south, east, north]. Without
 // this, MapLibre requests tiles outside the image; those 404 to the SPA
@@ -76,10 +93,13 @@ const habitatLabel = (color: string): LayerProps => ({
   },
 })
 
+// Protected-area outlines: reference context, not a highlight — a pale stone
+// dash (--map-pa-line) that reads on the dark imagery but stays quiet. Slightly
+// transparent and finely dashed so it recedes behind the earth-tone highlights.
 const paOutline = (color: string): LayerProps => ({
   id: 'pa-line',
   type: 'line',
-  paint: { 'line-color': color, 'line-width': 2, 'line-dasharray': [2, 1] },
+  paint: { 'line-color': color, 'line-width': 1.5, 'line-opacity': 0.8, 'line-dasharray': [3, 2] },
 })
 
 // Corridors coloured by their connectivity status. Keying the paint on the
@@ -89,7 +109,7 @@ const corridorLine = (colors: MapColors): LayerProps => ({
   id: 'corridor-line',
   type: 'line',
   paint: {
-    'line-width': 3,
+    'line-width': 15,
     'line-color': [
       'match',
       ['get', 'status'],
@@ -98,26 +118,6 @@ const corridorLine = (colors: MapColors): LayerProps => ({
       'partial',
       colors.partial,
       /* lost */ colors.loss,
-    ],
-  },
-})
-
-// Per-step highlight: habitat-risk regions filled by their risk class. Keyed on
-// the `riskLevel` property (same seam as corridors) and the --map-* tokens, so
-// the fill matches the sidebar RiskBadge and the legend for each class.
-const riskFill = (colors: MapColors): LayerProps => ({
-  id: 'risk-fill',
-  type: 'fill',
-  paint: {
-    'fill-opacity': 0.45,
-    'fill-color': [
-      'match',
-      ['get', 'riskLevel'],
-      'high',
-      colors.threat,
-      'med',
-      colors.partial,
-      /* low */ colors.habitat,
     ],
   },
 })
@@ -148,15 +148,19 @@ const driverCircles = (colors: MapColors): LayerProps => ({
  * deferred to B3 (glyph endpoint); so is swapping the COG for hosted PMTiles.
  */
 export interface MapStageProps {
-  /** Active step slug. Drives per-step highlights (e.g. the risk fill on F1). */
+  /** Active step slug. Reserved for step-driven map highlights; none are active
+   *  now (the Habitat risk fill was removed — that read lives in the sidebar). */
   activeStep?: string
+  /** Display year from the sidebar; snapped to the nearest basemap we have. */
+  year?: number
 }
 
-export default function MapStage({ activeStep }: MapStageProps) {
+export default function MapStage({ year }: MapStageProps) {
   const colors = useMemo(() => getMapColors(), [])
-  const showRisk = activeStep === 'habitat-risk'
+  const baseYear = resolveBasemapYear(year ?? LATEST_BASEMAP_YEAR)
+  const basemapTiles = BASEMAP_TILES_BY_YEAR[baseYear]
   const [layers, setLayers] = useState<LayerToggle[]>([
-    { id: 'satellite', label: 'Satellite 2025', enabled: true },
+    { id: 'satellite', label: 'Satellite', enabled: true },
     { id: 'habitat', label: 'Suspected habitat', enabled: true },
     { id: 'corridors', label: 'Corridors', enabled: true },
     { id: 'pa', label: 'Protected areas', enabled: true },
@@ -180,20 +184,16 @@ export default function MapStage({ activeStep }: MapStageProps) {
             show through outside the study area. */}
         {isOn('satellite') && (
           <Source
+            key={baseYear}
             id="satellite"
             type="raster"
-            tiles={[BASEMAP_TILES]}
+            tiles={[basemapTiles]}
             tileSize={256}
             minzoom={8}
             maxzoom={13}
             bounds={BASEMAP_BOUNDS}
           >
             <Layer {...satelliteRaster} />
-          </Source>
-        )}
-        {showRisk && (
-          <Source id="risk" type="geojson" data={riskSample}>
-            <Layer {...riskFill(colors)} />
           </Source>
         )}
         {isOn('habitat') && (
@@ -210,7 +210,7 @@ export default function MapStage({ activeStep }: MapStageProps) {
         )}
         {isOn('pa') && (
           <Source id="pa" type="geojson" data={protectedAreas}>
-            <Layer {...paOutline(colors.boundary)} />
+            <Layer {...paOutline(colors.paLine)} />
           </Source>
         )}
         {isOn('drivers') && (
@@ -219,23 +219,16 @@ export default function MapStage({ activeStep }: MapStageProps) {
           </Source>
         )}
       </Map>
-      <LayerControl layers={layers} onToggle={toggle} />
+      <LayerControl
+        layers={layers.map((l) => (l.id === 'satellite' ? { ...l, label: `Satellite ${baseYear}` } : l))}
+        onToggle={toggle}
+      />
 
       {/* Legend stack — positioned once here; each MapLegend is a plain card so
           multiple (risk + corridors) stack without overlapping. */}
       {/* Legends share a min-width (set on MapLegend) so the corridor card is the
           same width whether or not the wider risk legend sits above it. */}
       <div className="absolute bottom-3 left-3 z-10 flex flex-col gap-2">
-        {showRisk && (
-          <MapLegend
-            title="Habitat risk"
-            items={[
-              { label: 'High', color: colors.threat },
-              { label: 'Med', color: colors.partial },
-              { label: 'Low', color: colors.habitat },
-            ]}
-          />
-        )}
         {isOn('corridors') && (
           <MapLegend
             title="Corridors"
