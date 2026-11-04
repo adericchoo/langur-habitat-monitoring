@@ -23,7 +23,9 @@
   --map-loss:      #C65A3A;  /* clearing / loss front (terracotta)     */
   --map-partial:   #E0A43B;  /* partial corridor / degraded (amber)    */
   --map-threat:    #9E4A2E;  /* quarry / threat site (deep terracotta) */
-  --map-boundary:  #18144B;  /* protected-area outlines (navy)         */
+  --map-boundary:  #18144B;  /* habitat patch labels (navy, on halo)   */
+  --map-pa-line:   #EDE9DC;  /* protected-area outlines — pale stone,   */
+                             /* reads on dark imagery without shouting  */
 
   /* ---- Type ---- */
   --font-sans: "Montserrat", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
