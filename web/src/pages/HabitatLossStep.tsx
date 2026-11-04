@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useOutletContext } from 'react-router-dom'
+import type { MapYearContext } from '../App'
 import Sidebar from '../components/Sidebar'
 import MetricCard, { type MetricCardVariant } from '../components/MetricCard'
 import { usePins } from '../report/pins'
@@ -15,13 +17,13 @@ interface CardSpec {
 }
 
 // Which metrics become cards, in order, with their look + a screening-grade note.
-// Captions that carry a time reference take the selected year.
+// Captions that carry a time reference take the selected year. Net loss also
+// shows a % of the 2000 baseline (computed in the render).
 const CARD_SPECS: CardSpec[] = [
-  { key: 'remaining', metric: 'habitat_remaining', label: 'Habitat remaining', variant: 'featured', caption: (y) => `suspected extent, ${y} (screening)` },
-  { key: 'lost', metric: 'habitat_lost', label: 'Lost since 2000', caption: (y) => `class transition, 2000–${y}` },
-  { key: 'rate', metric: 'loss_rate', label: 'Loss rate', variant: 'accent', caption: (y) => `2000–${y} mean (screening)` },
+  { key: 'remaining', metric: 'habitat_remaining', label: 'Habitat area remaining', variant: 'featured', caption: (y) => `suspected extent, ${y} (screening)` },
+  { key: 'lost', metric: 'habitat_lost', label: 'Forest cleared since 2000', caption: (y) => `class transition, 2000–${y}` },
+  { key: 'rate', metric: 'loss_rate', label: 'Annual loss rate', variant: 'accent', caption: (y) => `2000–${y} mean (screening)` },
   { key: 'quarry', metric: 'quarry_footprint', label: 'Quarry footprint', caption: (y) => `registered extent, ${y} (sample)` },
-  { key: 'core', metric: 'core_habitat', label: 'Core habitat', caption: (y) => `interior, ${y} (screening)` },
 ]
 
 const DRIVERS = [
@@ -37,7 +39,9 @@ const fmt = (value: number) =>
  *  local to this step for D1 (H1 lifts them to a shared store). */
 export default function HabitatLossStep() {
   const [siteId, setSiteId] = useState(habitatLossSites[0].id)
-  const [year, setYear] = useState(() => habitatLossSites[0].metrics[0]?.year_end ?? 2026)
+  // Year is shared with the map (via App's Outlet context) so the selector below
+  // also switches the satellite basemap to the nearest available year.
+  const { mapYear: year, setMapYear: setYear } = useOutletContext<MapYearContext>()
   const { isPinned, toggle, count } = usePins()
 
   const site: HabitatLossSite =
@@ -58,7 +62,7 @@ export default function HabitatLossStep() {
       title="Habitat loss"
       subtitle={
         <span className="flex flex-wrap items-center gap-1.5">
-          <span>overall status ·</span>
+          <span>Year displayed ·</span>
           <select
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
@@ -102,6 +106,15 @@ export default function HabitatLossStep() {
           if (!metricRow) return null
           const id = `habitat-loss:${site.id}:${spec.key}`
           const caption = typeof spec.caption === 'function' ? spec.caption(year) : spec.caption
+          // Net loss also as a % of the 2000 baseline (remaining + lost = extent
+          // at 2000). Shown on the delta line; falls back to the caption otherwise.
+          let delta: string | undefined
+          if (spec.key === 'lost') {
+            const baseline2000 = (valueOf('habitat_remaining')?.value ?? 0) + metricRow.value
+            if (baseline2000 > 0) {
+              delta = `−${Math.round((metricRow.value / baseline2000) * 100)}% of 2000`
+            }
+          }
           return (
             <MetricCard
               key={spec.key}
@@ -109,6 +122,8 @@ export default function HabitatLossStep() {
               label={spec.label}
               value={fmt(metricRow.value)}
               unit={metricRow.unit}
+              delta={delta}
+              trend={delta ? 'down' : undefined}
               caption={caption}
               pinned={isPinned(id)}
               onTogglePin={() =>

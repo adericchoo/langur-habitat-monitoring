@@ -65,15 +65,29 @@ export const corridorSample: FeatureCollection = {
   type: 'FeatureCollection',
   features: [
     {
-      // Kim Bang ↔ Huong Son — adjacent patches, link still closed.
+      // New site west of Kim Bang — thinning link (partial). Replaces the former
+      // Kim Bang ↔ Huong Son intact corridor.
       type: 'Feature',
-      properties: { status: 'intact', label: 'Corridor — intact (sample)' },
+      properties: { status: 'partial', label: 'Corridor — partial (sample)' },
       geometry: {
         type: 'LineString',
         coordinates: [
-          [105.835, 20.527],
-          [105.815, 20.545],
-          [105.792, 20.558],
+          [105.792, 20.528],
+          [105.802, 20.527],
+          [105.812, 20.526],
+        ],
+      },
+    },
+    {
+      // Kim Bang ↔ Kim Bang (north lobe) — gap between the two habitat patches (partial).
+      type: 'Feature',
+      properties: { status: 'partial', label: 'Corridor — partial (sample)' },
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          [105.829, 20.541],
+          [105.826, 20.549],
+          [105.824, 20.555],
         ],
       },
     },
@@ -100,69 +114,6 @@ export const corridorSample: FeatureCollection = {
           [105.872, 20.365],
           [105.885, 20.32],
           [105.895, 20.29],
-        ],
-      },
-    },
-  ],
-}
-
-/**
- * Per-site habitat-risk regions, each classed high / med / low. SAMPLE tier —
- * synthetic polygons over the general region; composite risk is upstream TODO.
- * The `riskLevel` property is the contract point: MapStage's risk paint `match`
- * and the risk legend both key on it (mirrors the corridor `status` pattern).
- */
-export const riskSample: FeatureCollection = {
-  type: 'FeatureCollection',
-  features: [
-    {
-      type: 'Feature',
-      properties: { riskLevel: 'low', label: 'North ridge — low (sample)' },
-      geometry: {
-        type: 'Polygon',
-        coordinates: [
-          [
-            [105.72, 20.98],
-            [105.86, 21.0],
-            [105.9, 20.9],
-            [105.8, 20.84],
-            [105.7, 20.9],
-            [105.72, 20.98],
-          ],
-        ],
-      },
-    },
-    {
-      type: 'Feature',
-      properties: { riskLevel: 'high', label: 'Southern spur — high (sample)' },
-      geometry: {
-        type: 'Polygon',
-        coordinates: [
-          [
-            [105.94, 20.86],
-            [106.02, 20.88],
-            [106.04, 20.8],
-            [105.96, 20.78],
-            [105.92, 20.82],
-            [105.94, 20.86],
-          ],
-        ],
-      },
-    },
-    {
-      type: 'Feature',
-      properties: { riskLevel: 'med', label: 'Kim Bang block — med (sample)' },
-      geometry: {
-        type: 'Polygon',
-        coordinates: [
-          [
-            [105.86, 20.82],
-            [105.94, 20.84],
-            [105.96, 20.74],
-            [105.86, 20.72],
-            [105.82, 20.78],
-            [105.86, 20.82],
-          ],
         ],
       },
     },

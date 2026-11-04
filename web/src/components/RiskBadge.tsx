@@ -1,10 +1,10 @@
 import type { RiskLevel } from '../types/contract'
 
 // Risk class → label + swatch colour. Deliberately the earth-tone map-* tokens
-// (not brand colours) so a badge here matches the same site's fill on the map.
-// Literal classes so Tailwind's scanner keeps them.
+// (not brand colours): high → terracotta, med → amber, low → green. Literal
+// classes so Tailwind's scanner keeps them.
 const RISK: Record<RiskLevel, { label: string; cls: string }> = {
-  high: { label: 'High', cls: 'bg-map-threat' },
+  high: { label: 'High', cls: 'bg-map-loss' },
   med: { label: 'Med', cls: 'bg-map-partial' },
   low: { label: 'Low', cls: 'bg-map-habitat' },
 }
