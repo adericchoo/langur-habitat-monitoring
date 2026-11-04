@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useOutletContext } from 'react-router-dom'
+import type { MapYearContext } from '../App'
 import Sidebar from '../components/Sidebar'
 import MetricCard, { type MetricCardVariant } from '../components/MetricCard'
 import { usePins } from '../report/pins'
@@ -30,10 +32,19 @@ const fmt = (value: number) =>
  *  on the map are E2, not this step. Sample data — metrics are upstream TODO. */
 export default function FragmentationStep() {
   const [siteId, setSiteId] = useState(fragmentationSites[0].id)
+  // Year is shared with the map (via App's Outlet context), so this selector
+  // also switches the satellite basemap to the nearest available year — the
+  // same bar the Habitat loss step uses.
+  const { mapYear: year, setMapYear: setYear } = useOutletContext<MapYearContext>()
   const { isPinned, toggle, count } = usePins()
 
   const site: MetricSite =
     fragmentationSites.find((s) => s.id === siteId) ?? fragmentationSites[0]
+
+  // Available display years span the metric window (year_start…year_end), newest first.
+  const yearStart = site.metrics[0]?.year_start ?? 2000
+  const yearEnd = site.metrics[0]?.year_end ?? 2026
+  const years = Array.from({ length: yearEnd - yearStart + 1 }, (_, i) => yearEnd - i)
 
   const valueOf = (metric: string) => site.metrics.find((x) => x.metric === metric)
 
@@ -41,7 +52,23 @@ export default function FragmentationStep() {
     <Sidebar
       eyebrow="Northern Vietnam · Kim Bang"
       title="Fragmentation"
-      subtitle="landscape structure · screening · upstream TODO"
+      subtitle={
+        <span className="flex flex-wrap items-center gap-1.5">
+          <span>Year displayed ·</span>
+          <select
+            value={year}
+            onChange={(e) => setYear(Number(e.target.value))}
+            aria-label="Display year"
+            className="rounded-pill border border-brd bg-card px-2 py-0.5 text-sm font-semibold text-ink"
+          >
+            {years.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+        </span>
+      }
       headerAction={
         <span className="rounded-pill bg-teal-tint px-2.5 py-0.5 text-xs font-semibold text-teal">
           Report · {count} pinned
