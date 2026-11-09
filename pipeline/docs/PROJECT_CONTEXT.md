@@ -12,7 +12,7 @@ context, fragmentation, risk and reports.
 
 ## Current branch contribution
 
-Branch: `codex/base-pipeline-setup`
+Branch: `base-pipeline-setup`
 
 This branch adds only the public-safe base environment and documentation:
 
