@@ -1,0 +1,6 @@
+# Base Earth Engine connection and export-management environment.
+# Model libraries are intentionally deferred.
+earthengine-api
+python-dotenv
+numpy
+pandas

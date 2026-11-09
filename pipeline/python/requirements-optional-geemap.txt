@@ -1,0 +1,5 @@
+# Optional notebook/map and raster stack.
+# Prefer Python 3.11–3.13 for this file if wheels are unavailable for Python 3.15.
+geemap
+geopandas
+rasterio
