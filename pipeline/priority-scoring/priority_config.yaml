@@ -1,0 +1,73 @@
+config_version: "0.5-provisional"
+weights_elicited: false
+note: >
+  Every tunable the scorer uses lives in this file: dimension weights,
+  value-function anchors, ordinal maps and thresholds.
+  All values are provisional. Dimension weights come from AI for Good by swing
+  weighting; the value-function anchors want calibrating against the first real
+  hotspot table.
+  Detection confidence is applied upstream, by the classifier, before the
+  build step.
+
+dimension_weights:
+  threat: 0.30
+  value: 0.30
+  exposure: 0.25
+  governance: 0.15
+
+epsilon_floor: 0.05
+tier_thresholds:
+  P1: 60
+  P2: 40
+occupancy_floor: 0.45
+
+value_functions:
+  t_area_ha:            {kind: satlog, x0: 0.5,  xsat: 20}
+  t_rate_ha_yr:         {kind: satlog, x0: 0.1,  xsat: 5}
+  t_accel:              {kind: clamp,  lo: 0.5,  hi: 2.0}
+  t_recency_years:      {kind: piecewise, points: [[0, 1.0], [1, 0.8], [2, 0.6], [4, 0.3], [6, 0.05]]}
+  t_persist_years:      {kind: piecewise, points: [[1, 0.2], [5, 1.0]]}
+  v_remaining_ha:       {kind: satlog, x0: 50,   xsat: 5000}
+  v_canopy_frac:        {kind: identity}
+  v_langur_dist_m:      {kind: decay,  d0: 750}
+  v_evidence_years:     {kind: piecewise, points: [[0, 1.0], [5, 0.7], [10, 0.4], [20, 0.1]]}
+  v_irrepl:             {kind: identity}
+  e_adjacent_ha:        {kind: satlog, x0: 0.5,  xsat: 15}
+  e_edge_frac:          {kind: identity}
+  g_access_km:          {kind: decay,  d0: 20}
+  record_reliability:   {kind: identity}   # weights v_langur_dist by the quality of the record behind it
+
+ordinals:
+  v_occupancy:     {confirmed: 1.0, historical_unsurveyed: 0.5, no_record: 0.2}
+  g_protected:     {inside: 1.0, buffer: 0.6, outside: 0.3}
+  g_designation:
+    World Heritage Site: 1.0
+    National Park: 0.85
+    Nature Reserve: 0.7
+    Cultural/Historical Landscape: 0.5
+    none: 0.3
+  g_iucn_cat:      {II: 0.85, V: 0.5, Not Reported: 0.7, none: 0.3}
+  e_connect_critical: {TRUE: 1.0, FALSE: 0.3}
+
+indicator_labels:
+  t_area_ha: area cleared
+  t_rate_ha_yr: expansion rate
+  t_accel: acceleration
+  t_recency_years: how recently it appeared
+  t_persist_years: years it has persisted
+  v_remaining_ha: forest remaining at the site
+  v_canopy_frac: tall-canopy share
+  v_langur_dist_m: closeness to a langur record
+  v_evidence_years: how recent the site evidence is
+  v_occupancy: occupancy status
+  v_irrepl: irreplaceability of the population
+  e_adjacent_ha: adjacent forest at risk
+  e_edge_frac: share of site edge affected
+  e_connect_critical: connectivity at stake
+  g_protected: protected-area status
+  g_designation: protection instrument
+  g_iucn_cat: protection category
+  g_unlicensed: licence status
+  g_access_km: reachability
+
+min_dimension_coverage: 0.5
