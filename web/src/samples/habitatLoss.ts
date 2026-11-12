@@ -6,10 +6,10 @@ import type { HabitatLossSite, SummaryMetric } from '../types/contract'
  * measurements or locations. Replaced by the B4 typed loader. See SECURITY.md.
  * Lives under src/samples/ (not the gitignored `data/`).
  *
- * Region names come from the (publicly known) karst areas in
- * src/map/habitatAreas.json; `habitat_remaining` is anchored to each area's
- * area_ha, the rest are illustrative. The "All regions (overall)" entry is
- * derived from these — see aggregateSites below.
+ * Region names are the publicly-known karst / protected areas;
+ * `habitat_remaining` is anchored to each area's published extent (ha), the rest
+ * are illustrative. The "All regions (overall)" entry is derived from these —
+ * see aggregateSites below.
  */
 
 const BASE = {
@@ -31,7 +31,7 @@ const row = (study_area: string, metric: string, value: number, unit: string): S
 interface RegionSpec {
   id: string
   name: string
-  remaining: number // habitat_remaining, ha (anchored to habitatAreas.json area_ha)
+  remaining: number // habitat_remaining, ha (anchored to each area's published extent)
   lost: number // habitat_lost since 2000, ha
   rate: number // loss_rate, %/yr
   quarry: number // quarry_footprint, ha
