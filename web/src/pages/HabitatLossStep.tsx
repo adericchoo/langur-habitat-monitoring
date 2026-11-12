@@ -22,6 +22,7 @@ interface CardSpec {
 const CARD_SPECS: CardSpec[] = [
   { key: 'remaining', metric: 'habitat_remaining', label: 'Habitat area remaining', variant: 'featured', caption: (y) => `suspected extent, ${y} (screening)` },
   { key: 'lost', metric: 'habitat_lost', label: 'Forest cleared since 2000', caption: (y) => `class transition, 2000–${y}` },
+  { key: 'gain', metric: 'forest_gain', label: 'Forest regained', caption: 'non-forest → forest (screening)' },
   { key: 'rate', metric: 'loss_rate', label: 'Annual loss rate', variant: 'accent', caption: (y) => `2000–${y} mean (screening)` },
   { key: 'quarry', metric: 'quarry_footprint', label: 'Quarry footprint', caption: (y) => `registered extent, ${y} (sample)` },
 ]

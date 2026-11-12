@@ -1,0 +1,4 @@
+# Habitat-loss metrics (pipeline/metrics/habitat_loss.py)
+# Install into a venv:  python -m venv .venv && .venv/Scripts/activate && pip install -r pipeline/metrics/requirements.txt
+rasterio>=1.3
+numpy>=1.24
