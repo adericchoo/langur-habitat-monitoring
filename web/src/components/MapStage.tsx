@@ -1,11 +1,19 @@
 import { useMemo, useState } from 'react'
 import type { FeatureCollection } from 'geojson'
 import Map, { Layer, Source } from 'react-map-gl/maplibre'
-import type { LayerProps } from 'react-map-gl/maplibre'
 import LayerControl, { type LayerToggle } from './LayerControl'
 import MapLegend from './MapLegend'
-import { getMapColors, type MapColors } from '../map/mapColors'
+import { getMapColors } from '../map/mapColors'
 import { corridorSample, driverSample } from '../map/sampleLayers'
+import {
+  BASEMAP_BOUNDS,
+  BASEMAP_INITIAL_VIEW,
+  BASEMAP_TILES_BY_YEAR,
+  LATEST_BASEMAP_YEAR,
+  resolveBasemapYear,
+  satelliteRaster,
+} from '../map/basemap'
+import { corridorLine, driverCircles, paOutline } from '../map/layers'
 // NOTE: the habitat-extent polygons were removed from this repo (data + full git
 // history) as a precaution — even coarsened karst outlines are not published in
 // the public bundle. If a habitat overlay is wanted, it returns via the SVW-gated
@@ -18,95 +26,9 @@ import { corridorSample, driverSample } from '../map/sampleLayers'
 import protectedAreasJson from '../map/protectedAreas.json'
 const protectedAreas = protectedAreasJson as FeatureCollection
 
-// Satellite basemap tiles: XYZ PNG pyramid (EPSG:3857, z8–13) built with
-// gdal2tiles from the 2025 Sentinel-2 export. PNG tiles carry their own alpha,
-// so the area outside the study polygon is transparent (demotiles shows
-// through) and MapLibre composites them natively — no cog:// reader/decode.
-// Dev serves from web/public/basemap/tiles*; prod sets the VITE_* templates to
-// hosted paths. Tiles are gitignored, never committed. One XYZ pyramid per year
-// we actually have imagery for (2000 + 2025 so far); add a row when a new year's
-// tiles land. The sidebar's display year drives which one shows (see below).
-const BASEMAP_TILES_BY_YEAR: Record<number, string> = {
-  2000: import.meta.env.VITE_BASEMAP_TILES_2000 ?? '/basemap/tiles-2000/{z}/{x}/{y}.png',
-  2025: import.meta.env.VITE_BASEMAP_TILES ?? '/basemap/tiles/{z}/{x}/{y}.png',
-}
-const BASEMAP_YEARS = Object.keys(BASEMAP_TILES_BY_YEAR).map(Number).sort((a, b) => a - b)
-const LATEST_BASEMAP_YEAR = BASEMAP_YEARS[BASEMAP_YEARS.length - 1]
-
-// We only have imagery for a few years; snap a requested display year to the
-// nearest one that exists (ties go to the earlier year).
-function resolveBasemapYear(year: number): number {
-  return BASEMAP_YEARS.reduce(
-    (best, y) => (Math.abs(y - year) < Math.abs(best - year) ? y : best),
-    BASEMAP_YEARS[0],
-  )
-}
-
-// Geographic extent of the tiled imagery [west, south, east, north]. Without
-// this, MapLibre requests tiles outside the image; those 404 to the SPA
-// index.html and throw "source image could not be decoded". Bounds confine
-// requests to tiles that actually exist.
-const BASEMAP_BOUNDS: [number, number, number, number] = [104.963, 19.9627, 106.0809, 20.7939]
-
-// Satellite basemap raster layer. No colour tokens: it's real imagery, not a
-// highlight. Kept fully opaque; it sits UNDER the vector highlight layers.
-const satelliteRaster: LayerProps = {
-  id: 'satellite-raster',
-  type: 'raster',
-  paint: { 'raster-opacity': 1 },
-}
-
-// Layer paint builders — map highlights use the --map-* earth-tone tokens only
-// (never brand colours), resolved from design-tokens.css via getMapColors().
-// (The habitat fill/outline/label builders were removed with the habitat layer.)
-
-// Protected-area outlines: reference context, not a highlight — a pale stone
-// dash (--map-pa-line) that reads on the dark imagery but stays quiet. Slightly
-// transparent and finely dashed so it recedes behind the earth-tone highlights.
-const paOutline = (color: string): LayerProps => ({
-  id: 'pa-line',
-  type: 'line',
-  paint: { 'line-color': color, 'line-width': 1.5, 'line-opacity': 0.8, 'line-dasharray': [3, 2] },
-})
-
-// Corridors coloured by their connectivity status. Keying the paint on the
-// `status` property (not per-feature colours) is the contract seam: real
-// pipeline corridors render unchanged as long as they carry the same statuses.
-const corridorLine = (colors: MapColors): LayerProps => ({
-  id: 'corridor-line',
-  type: 'line',
-  paint: {
-    'line-width': 15,
-    'line-color': [
-      'match',
-      ['get', 'status'],
-      'intact',
-      colors.habitat,
-      'partial',
-      colors.partial,
-      /* lost */ colors.loss,
-    ],
-  },
-})
-
-const driverCircles = (colors: MapColors): LayerProps => ({
-  id: 'driver-circles',
-  type: 'circle',
-  paint: {
-    'circle-radius': 6,
-    'circle-color': [
-      'match',
-      ['get', 'kind'],
-      'quarry',
-      colors.threat,
-      'clearing',
-      colors.loss,
-      /* other */ colors.partial,
-    ],
-    'circle-stroke-width': 1.5,
-    'circle-stroke-color': '#ffffff',
-  },
-})
+// Basemap tiles/bounds/year-resolution and the vector layer paint builders now
+// live in ../map/basemap and ../map/layers so the D2 compare split-map shares
+// one definition. This component's behaviour is unchanged.
 
 /**
  * Map stage: 2025 Sentinel-2 true-colour basemap (a reprojected COG streamed via
@@ -140,9 +62,10 @@ export default function MapStage({ year }: MapStageProps) {
   return (
     <div className="relative h-full w-full">
       <Map
-        initialViewState={{ longitude: 105.52, latitude: 20.38, zoom: 8.5 }}
+        initialViewState={BASEMAP_INITIAL_VIEW}
         mapStyle="https://demotiles.maplibre.org/style.json"
         style={{ width: '100%', height: '100%' }}
+        attributionControl={false}
       >
         {/* Satellite basemap — first child so it renders UNDER every vector
             highlight. XYZ PNG tiles (RGBA); `bounds` confines tile requests to

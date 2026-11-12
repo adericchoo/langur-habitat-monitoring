@@ -6,6 +6,10 @@ import MetricCard, { type MetricCardVariant } from '../components/MetricCard'
 import { usePins } from '../report/pins'
 import { habitatLossSites } from '../samples/habitatLoss'
 import type { HabitatLossSite } from '../types/contract'
+import { useCompare } from '../compare/CompareContext'
+import CompareControls from '../compare/CompareControls'
+import CompareDashboard from '../compare/CompareDashboard'
+import LayerSection, { HabitatPending } from '../components/LayerSection'
 
 interface CardSpec {
   key: string
@@ -44,6 +48,7 @@ export default function HabitatLossStep() {
   // also switches the satellite basemap to the nearest available year.
   const { mapYear: year, setMapYear: setYear } = useOutletContext<MapYearContext>()
   const { isPinned, toggle, count } = usePins()
+  const { compareOn, baselineYear, currentYear } = useCompare()
 
   const site: HabitatLossSite =
     habitatLossSites.find((s) => s.id === siteId) ?? habitatLossSites[0]
@@ -62,21 +67,27 @@ export default function HabitatLossStep() {
       eyebrow="Northern Vietnam · Kim Bang"
       title="Habitat loss"
       subtitle={
-        <span className="flex flex-wrap items-center gap-1.5">
-          <span>Year displayed ·</span>
-          <select
-            value={year}
-            onChange={(e) => setYear(Number(e.target.value))}
-            aria-label="Display year"
-            className="rounded-pill border border-brd bg-card px-2 py-0.5 text-sm font-semibold text-ink"
-          >
-            {years.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </select>
-        </span>
+        compareOn ? (
+          <span>
+            Comparing {baselineYear} → {currentYear} · screening
+          </span>
+        ) : (
+          <span className="flex flex-wrap items-center gap-1.5">
+            <span>Year displayed ·</span>
+            <select
+              value={year}
+              onChange={(e) => setYear(Number(e.target.value))}
+              aria-label="Display year"
+              className="rounded-pill border border-brd bg-card px-2 py-0.5 text-sm font-semibold text-ink"
+            >
+              {years.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          </span>
+        )
       }
       headerAction={
         <span className="rounded-pill bg-teal-tint px-2.5 py-0.5 text-xs font-semibold text-teal">
@@ -84,6 +95,47 @@ export default function HabitatLossStep() {
         </span>
       }
     >
+      <CompareControls />
+
+      {compareOn ? (
+        <CompareDashboard />
+      ) : (
+        <SingleYearBody
+          year={year}
+          site={site}
+          siteId={siteId}
+          setSiteId={setSiteId}
+          valueOf={valueOf}
+          drivers={drivers}
+          isPinned={isPinned}
+          toggle={toggle}
+        />
+      )}
+    </Sidebar>
+  )
+}
+
+function SingleYearBody({
+  year,
+  site,
+  siteId,
+  setSiteId,
+  valueOf,
+  drivers,
+  isPinned,
+  toggle,
+}: {
+  year: number
+  site: HabitatLossSite
+  siteId: string
+  setSiteId: (id: string) => void
+  valueOf: (metric: string) => HabitatLossSite['metrics'][number] | undefined
+  drivers: { label: string; pct: number }[]
+  isPinned: (id: string) => boolean
+  toggle: ReturnType<typeof usePins>['toggle']
+}) {
+  return (
+    <>
       <label className="mb-3 block">
         <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-secondary">
           Site
@@ -101,8 +153,10 @@ export default function HabitatLossStep() {
         </select>
       </label>
 
-      <div className="space-y-3">
-        {CARD_SPECS.map((spec) => {
+      <div className="space-y-4">
+        <LayerSection layer="forest">
+          <div className="space-y-3">
+            {CARD_SPECS.map((spec) => {
           const metricRow = valueOf(spec.metric)
           if (!metricRow) return null
           const id = `habitat-loss:${site.id}:${spec.key}`
@@ -141,13 +195,19 @@ export default function HabitatLossStep() {
           )
         })}
 
-        <DriverBreakdown drivers={drivers} />
+            <DriverBreakdown drivers={drivers} />
+          </div>
+        </LayerSection>
+
+        <LayerSection layer="habitat">
+          <HabitatPending />
+        </LayerSection>
       </div>
 
       <p className="mt-4 text-xs text-secondary">
         Pinned figures carry into Step 05 · Report. Screening product — not confirmed loss.
       </p>
-    </Sidebar>
+    </>
   )
 }
 
