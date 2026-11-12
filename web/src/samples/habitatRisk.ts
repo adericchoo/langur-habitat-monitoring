@@ -45,7 +45,7 @@ interface Seed {
   confidence: RiskSite['confidence']
 }
 
-// Region names are real (from habitatAreas.json); scores/bands/confidence are
+// Region names are real (publicly-known karst / protected areas); scores/bands/confidence are
 // placeholders. Confidence is varied, and kept INDEPENDENT of the score: the two
 // high-score / lower-confidence sites (Huong Son, Kim Bang) carry verifyFirst,
 // which flags "verify first" but never demotes the risk band.

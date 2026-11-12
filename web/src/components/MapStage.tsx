@@ -6,11 +6,11 @@ import LayerControl, { type LayerToggle } from './LayerControl'
 import MapLegend from './MapLegend'
 import { getMapColors, type MapColors } from '../map/mapColors'
 import { corridorSample, driverSample } from '../map/sampleLayers'
-// Real habitat extent: 7 coarsened karst-patch polygons (public-safe — langur
-// presence flag + screening attributes stripped at export; see habitatAreas.geojson).
-// Screening-grade, approximate; label the UI accordingly.
-import habitatAreasJson from '../map/habitatAreas.json'
-const habitatAreas = habitatAreasJson as FeatureCollection
+// NOTE: the habitat-extent polygons were removed from this repo (data + full git
+// history) as a precaution — even coarsened karst outlines are not published in
+// the public bundle. If a habitat overlay is wanted, it returns via the SVW-gated
+// tier (B5 two-tier access), loaded at runtime from a non-public source — never
+// re-committed here.
 // Protected areas: 6 gazetted parks/reserves overlapping the basemap extent,
 // from the public WDPA (World Database on Protected Areas) — non-sensitive
 // reference data. Coarsened to 0.001° on export (see protectedAreas.json).
@@ -58,40 +58,7 @@ const satelliteRaster: LayerProps = {
 
 // Layer paint builders — map highlights use the --map-* earth-tone tokens only
 // (never brand colours), resolved from design-tokens.css via getMapColors().
-const habitatFill = (color: string): LayerProps => ({
-  id: 'habitat-fill',
-  type: 'fill',
-  paint: { 'fill-color': color, 'fill-opacity': 0.35 },
-})
-
-const habitatOutline = (color: string): LayerProps => ({
-  id: 'habitat-outline',
-  type: 'line',
-  paint: { 'line-color': color, 'line-width': 1.5 },
-})
-
-// Patch name labels. Uses the basemap style's glyphs for now (Open Sans); the
-// Montserrat glyph endpoint is a B3 deferral. White halo keeps names legible
-// over the satellite imagery. Dark --map-boundary token for the text itself.
-const habitatLabel = (color: string): LayerProps => ({
-  id: 'habitat-label',
-  type: 'symbol',
-  layout: {
-    'text-field': ['get', 'name'],
-    // Must be a fontstack the basemap style's glyph server actually serves.
-    // demotiles only has "Open Sans Semibold"; a missing font 404s the glyph
-    // fetch and fails the whole tile parse (fills + outlines vanish too).
-    // Montserrat labels wait on the B3 self-hosted glyph endpoint.
-    'text-font': ['Open Sans Semibold'],
-    'text-size': 12,
-    'text-allow-overlap': false,
-  },
-  paint: {
-    'text-color': color,
-    'text-halo-color': '#ffffff',
-    'text-halo-width': 1.5,
-  },
-})
+// (The habitat fill/outline/label builders were removed with the habitat layer.)
 
 // Protected-area outlines: reference context, not a highlight — a pale stone
 // dash (--map-pa-line) that reads on the dark imagery but stays quiet. Slightly
@@ -161,7 +128,6 @@ export default function MapStage({ year }: MapStageProps) {
   const basemapTiles = BASEMAP_TILES_BY_YEAR[baseYear]
   const [layers, setLayers] = useState<LayerToggle[]>([
     { id: 'satellite', label: 'Satellite', enabled: true },
-    { id: 'habitat', label: 'Suspected habitat', enabled: true },
     { id: 'corridors', label: 'Corridors', enabled: true },
     { id: 'pa', label: 'Protected areas', enabled: true },
     { id: 'drivers', label: 'Drivers', enabled: true },
@@ -194,13 +160,6 @@ export default function MapStage({ year }: MapStageProps) {
             bounds={BASEMAP_BOUNDS}
           >
             <Layer {...satelliteRaster} />
-          </Source>
-        )}
-        {isOn('habitat') && (
-          <Source id="habitat" type="geojson" data={habitatAreas}>
-            <Layer {...habitatFill(colors.habitat)} />
-            <Layer {...habitatOutline(colors.habitat)} />
-            <Layer {...habitatLabel(colors.boundary)} />
           </Source>
         )}
         {isOn('corridors') && (
