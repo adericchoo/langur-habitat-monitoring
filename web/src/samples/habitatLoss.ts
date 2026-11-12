@@ -36,6 +36,7 @@ interface RegionSpec {
   rate: number // loss_rate, %/yr
   quarry: number // quarry_footprint, ha
   core: number // core_habitat, ha
+  gain: number // forest_gain, ha (non-forest -> forest; reported alongside loss, never netted)
   mining: number // driver shares, % (mining + farming + other = 100)
   farming: number
   other: number
@@ -50,6 +51,7 @@ const makeSite = (s: RegionSpec): HabitatLossSite => ({
     row(s.name, 'loss_rate', s.rate, '%/yr'),
     row(s.name, 'quarry_footprint', s.quarry, 'ha'),
     row(s.name, 'core_habitat', s.core, 'ha'),
+    row(s.name, 'forest_gain', s.gain, 'ha'),
     row(s.name, 'driver_mining', s.mining, '%'),
     row(s.name, 'driver_farming', s.farming, '%'),
     row(s.name, 'driver_other', s.other, '%'),
@@ -58,13 +60,13 @@ const makeSite = (s: RegionSpec): HabitatLossSite => ({
 
 // The per-region samples. The "Overall" study area is derived from these.
 const regionalSites: HabitatLossSite[] = [
-  { id: 'pu-luong', name: 'Pu Luong Karst (sample)', remaining: 12409, lost: 1840, rate: 0.7, quarry: 180, core: 7200, mining: 28, farming: 52, other: 20 },
-  { id: 'cuc-phuong', name: 'Cuc Phuong (sample)', remaining: 22346, lost: 920, rate: 0.3, quarry: 60, core: 15800, mining: 12, farming: 61, other: 27 },
-  { id: 'hoa-lu-trang-an', name: 'Hoa Lu / Trang An (sample)', remaining: 6181, lost: 1320, rate: 1.1, quarry: 95, core: 3100, mining: 22, farming: 45, other: 33 },
-  { id: 'tam-diep', name: 'Tam Diep (sample)', remaining: 3938, lost: 1510, rate: 1.6, quarry: 540, core: 1500, mining: 58, farming: 29, other: 13 },
-  { id: 'huong-son-lac-thuy', name: 'Huong Son – Lac Thuy (sample)', remaining: 5644, lost: 1180, rate: 1.0, quarry: 320, core: 2600, mining: 47, farming: 36, other: 17 },
-  { id: 'kim-bang', name: 'Kim Bang (sample)', remaining: 2416, lost: 1870, rate: 2.1, quarry: 610, core: 980, mining: 63, farming: 24, other: 13 },
-  { id: 'van-long-dong-tam', name: 'Van Long NR – Dong Tam (sample)', remaining: 4281, lost: 760, rate: 0.6, quarry: 140, core: 2400, mining: 31, farming: 48, other: 21 },
+  { id: 'pu-luong', name: 'Pu Luong Karst (sample)', remaining: 12409, lost: 1840, rate: 0.7, quarry: 180, core: 7200, gain: 260, mining: 28, farming: 52, other: 20 },
+  { id: 'cuc-phuong', name: 'Cuc Phuong (sample)', remaining: 22346, lost: 920, rate: 0.3, quarry: 60, core: 15800, gain: 410, mining: 12, farming: 61, other: 27 },
+  { id: 'hoa-lu-trang-an', name: 'Hoa Lu / Trang An (sample)', remaining: 6181, lost: 1320, rate: 1.1, quarry: 95, core: 3100, gain: 180, mining: 22, farming: 45, other: 33 },
+  { id: 'tam-diep', name: 'Tam Diep (sample)', remaining: 3938, lost: 1510, rate: 1.6, quarry: 540, core: 1500, gain: 90, mining: 58, farming: 29, other: 13 },
+  { id: 'huong-son-lac-thuy', name: 'Huong Son – Lac Thuy (sample)', remaining: 5644, lost: 1180, rate: 1.0, quarry: 320, core: 2600, gain: 150, mining: 47, farming: 36, other: 17 },
+  { id: 'kim-bang', name: 'Kim Bang (sample)', remaining: 2416, lost: 1870, rate: 2.1, quarry: 610, core: 980, gain: 70, mining: 63, farming: 24, other: 13 },
+  { id: 'van-long-dong-tam', name: 'Van Long NR – Dong Tam (sample)', remaining: 4281, lost: 760, rate: 0.6, quarry: 140, core: 2400, gain: 220, mining: 31, farming: 48, other: 21 },
 ].map(makeSite)
 
 const OVERALL_NAME = 'All regions (overall)'
@@ -110,6 +112,7 @@ function aggregateSites(sites: HabitatLossSite[]): HabitatLossSite {
       r('loss_rate', lossRate, '%/yr'),
       r('quarry_footprint', sum('quarry_footprint'), 'ha'),
       r('core_habitat', sum('core_habitat'), 'ha'),
+      r('forest_gain', sum('forest_gain'), 'ha'),
       r('driver_mining', driverShare('driver_mining'), '%'),
       r('driver_farming', driverShare('driver_farming'), '%'),
       r('driver_other', driverShare('driver_other'), '%'),

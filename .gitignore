@@ -26,6 +26,10 @@ __pycache__/
 .venv/
 .ipynb_checkpoints/
 
+# habitat-loss metric outputs — review before publishing; the CSV is aggregated
+# (safe tier) but kept out of git until a human has checked it.
+pipeline/metrics/outputs/
+
 # notes
 CLAUDE.md
 BUILD_CHECKLIST.md
