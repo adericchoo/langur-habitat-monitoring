@@ -1,60 +1,250 @@
-# GEE handoff — verified progress
+# Langur Habitat Monitoring — Current GEE Handoff
 
-Updated 2026-10-21 from the authorised Earth Engine project. This file is a
-handoff summary, not a replacement for the live GEE scripts.
+**Updated:** 17 November 2026  
+**Project stage:** Week 10 — validation, metrics, risk/report preparation  
+**Audience:** A teammate continuing from another laptop
 
-## Public-safe work completed
+This document records what has been completed, what is currently running, known
+issues, and the next safe actions. Current maps remain screening products until
+SVW and independent reference data validate them.
 
-- `scripts/public/historical_timeseries_public_template.js` runs successfully.
-- It requests annual screening summaries for 1985, 1990, 1995, 2000, 2005,
-  2010, 2015, 2020 and 2025.
-- It uses only public Landsat Collection 2 Level 2 data and a coarse placeholder
-  rectangle; it does not contain private langur assets or locations.
-- It produces annual NDVI, NDMI, MSAVI and BSI summaries and a CSV export task
-  in `Earth Engine Exports`.
-- The script includes a no-scene fallback so years without usable imagery do
-  not fail with `Image.select` on an empty image.
+## 1. Project purpose
 
-## Verified private GEE results (not committed here)
+The pipeline combines Sentinel-2, Landsat, AlphaEarth embeddings, geology,
+terrain and training polygons to produce:
 
-- Official SVW current range: 1 feature.
-- WOKAM inside official range: 1 feature.
-- GLiM inside official range: 18 features.
-- Protected areas: 7 features; private current langur areas: 7 features.
-- 09C consensus screening (2000–2025): 941.78 ha moderate, 65.02 ha high,
-  647.48 ha highest; 1,654.29 ha total possible-loss screening area.
-- 10/10A Sentinel-2 baseline: 177 source scenes and 177 cloud-masked scenes.
-- 11 AlphaEarth exploratory baseline: p25 similarity 0.5410, p75 0.8223.
-- 12 private validation: high-similarity enrichment ratio 2.1735. This is an
-  aggregate internal validation result, not a public habitat claim.
-- 13 karst-likelihood V1: 64,593.83 ha moderate class; high/strong classes
-  currently 0 ha. This is a geology/terrain screening map, not confirmed karst.
+- habitat/land-cover classification;
+- historical change summaries from the 1980s onward;
+- quarry and forest-loss screening;
+- fragmentation, connectivity and risk metrics;
+- frontend-ready map layers and report inputs.
 
-## Privacy boundary
+The public repository contains only public-safe templates and documentation.
+Private GEE assets, precise langur locations and raw validation data remain in
+the authorised Earth Engine project.
 
-The public repository must not contain private asset IDs, precise langur areas,
-historical sightings, raw validation polygons, or sensitive exports. Keep the
-full authorised scripts in the private GEE project/private repository. The
-public historical template deliberately uses a coarse placeholder rectangle.
+## 2. Timeline position
 
-## Next GEE steps
+### W6 — baseline and segmentation
 
-1. Create a private historical time-series script by replacing the public
-   placeholder with the authorised SVW current-range asset while preserving the
-   1985–2025 years and no-scene fallback.
-2. Run and privately export the historical summary CSV to `Earth Engine
-   Exports`; record collection IDs, date windows, scale, CRS and run date.
-3. Export the verified 09C consensus summary and 13 karst-likelihood summary
-   privately.
-4. Prepare spatially independent ground-truth polygons before training any
-   segmentation classifier; report a confusion matrix and class-wise precision
-   and recall.
-5. Then build fragmentation/connectivity and risk metrics for the frontend data
-   contract. Do not publish a classifier or risk layer until validation is
-   documented.
+Completed:
 
-## GitHub continuation
+- Sentinel-2 baseline and cloud masking.
+- NDVI, NDMI, MSAVI and BSI layers.
+- AlphaEarth annual embedding baseline with 64 bands (`A00`–`A63`).
+- First Random Forest, CART, Gradient Tree Boosting and SVM prototypes.
 
-Current branch: `gee/D1-baseline-exports`. The public-safe commits are pushed
-to the remote and should be reviewed before merging. Continue private work on a
-private branch/repository; do not copy the full scripts into this public branch.
+Still needed:
+
+- Final training/validation polygon quality review.
+- A validated first segmentation layer.
+
+### W7 — historical years and ground truth
+
+Completed or available:
+
+- Public historical template for 1985, 1990, 1995, 2000, 2005, 2010, 2015,
+  2020 and 2025.
+- Private Landsat 2000–2025 screening workflows.
+- Five-year export plan: 2000, 2005, 2010, 2015, 2020 and 2025.
+- 2025 Sentinel-2 exports.
+
+Still needed:
+
+- Complete and verify the agreed historical exports.
+- Create independent polygon-level validation data.
+- Record collection, date window, scale, projection and scene counts.
+
+### W8 — policy and metric framework
+
+Still needed:
+
+- Habitat-loss area, net loss, rate and change-matrix definitions.
+- Policy evidence bank and policy-to-metric matching framework.
+- Documented formulas, thresholds, assumptions and limitations.
+
+### W9 — fragmentation and reports
+
+Still needed:
+
+- Fragmentation/connectivity and corridor metrics.
+- Least-cost corridor method, if reference data supports it.
+- Report-generation data contract, templates and algorithm.
+
+### W10 — current focus
+
+Current priorities:
+
+1. Freeze and validate the training data.
+2. Compare models using the same evaluation protocol.
+3. Define risk and report outputs.
+4. Prepare frontend-ready layer names, palettes, units and metadata.
+
+## 3. Training polygons
+
+The original private asset is retained as the V1 backup:
+
+`delacour_langur_training_polygons_2025_v1`
+
+A new V2 asset export completed successfully on 17 November 2026:
+
+`delacour_langur_training_polygons_2025_v2`
+
+The V2 imports are:
+
+| Code | Class | Intended meaning |
+|---:|---|---|
+| 1 | Quarry | Exposed excavation, benches, spoil or disturbed rock |
+| 2 | Forest | Forest / likely habitat |
+| 3 | Agriculture | Agriculture or plantation |
+| 4 | Other | Clearly non-quarry natural or bare land |
+| 5 | Roads | Roads and transport surfaces |
+| 6 | Buildings | Buildings and built-up surfaces |
+
+The six Geometry Import names must be exactly:
+
+`Quarries`, `Forests`, `Agriculture`, `Other`, `Roads`, `Buildings`
+
+Quarry polygons should cover only visible disturbed extraction surfaces, not
+the whole mountain. Roads, buildings, dry fields and natural limestone are
+important hard negatives. If a class is missing from the asset, retrain only
+after adding valid polygons for that class.
+
+Keep a separate spatial validation polygon set. Do not use the validation
+polygons for training.
+
+## 4. Current RF V2 design
+
+The updated Random Forest script is:
+
+`RF_V2_six_class_full_coverage.js`
+
+It uses:
+
+- AlphaEarth 2024 annual embeddings (64 bands);
+- Sentinel-2 2025 cloud-masked predictors;
+- 2024 then 2023 Sentinel fallback where needed;
+- six raw Sentinel bands plus NDVI, NDMI, MSAVI and BSI;
+- 74 predictor bands in total;
+- a maximum of 500 sampled pixels per class;
+- 300-tree Random Forest with `variablesPerSplit: 8`;
+- held-out testing and five-fold cross-validation;
+- forest and quarry binary confusion matrices;
+- class areas in square metres and hectares;
+- six-class map palette and legend.
+
+The earlier `variablesPerSplit: 0` setting was invalid and has been corrected
+to 8. The conservative quarry BSI threshold now has a safe fallback so an
+empty percentile dictionary does not break the map layer.
+
+Before accepting any run, confirm the console reports non-zero samples for all
+six classes and inspect the confusion matrix.
+
+## 5. Required evaluation outputs
+
+For every model record:
+
+- multiclass confusion matrix;
+- overall test accuracy and Kappa;
+- producer accuracy/recall by class;
+- consumer accuracy/precision by class;
+- forest recall, precision and F1;
+- forest false positives and false negatives;
+- quarry recall, precision and F1;
+- quarry false positives and false negatives;
+- training accuracy, validation accuracy and overfitting gap;
+- five-fold mean accuracy and standard deviation;
+- classified area by class.
+
+Interpretation:
+
+- Forest false positive: non-forest mapped as forest, which can overstate
+  habitat extent.
+- Forest false negative: real forest missed, which can understate habitat.
+- Quarry false positive: non-quarry mapped as quarry, which can exaggerate
+  quarry-related forest loss.
+- Quarry false negative: real quarry missed, which underestimates quarry area.
+
+The project intentionally uses a conservative quarry estimate: high precision
+is preferred over high recall so quarry-driven forest loss is not exaggerated.
+Report both the raw predicted quarry area and the stricter conservative area.
+
+## 6. Model comparison plan
+
+Completed or prototyped:
+
+- Random Forest — main baseline.
+- CART — interpretable single tree.
+- Gradient Tree Boosting — Smile gradient boosting in GEE, not XGBoost or
+  LightGBM.
+- SVM — nonlinear margin-based comparison; quarry probability handling still
+  needs final QA.
+
+Planned or optional local comparisons:
+
+- KNN;
+- Extra Trees;
+- XGBoost;
+- LightGBM;
+- CatBoost.
+
+All comparisons must use the same polygons, predictors, random seed, split and
+validation method. Do not select a model using random-pixel accuracy alone;
+use spatial/polygon-level validation and inspect the map visually.
+
+## 7. Earth Engine quota issue
+
+The project recently entered noncommercial restricted mode after exceeding its
+monthly compute quota. This is an Earth Engine project quota issue, not a
+training-data failure. Existing completed assets remain available. Restricted
+mode can still run tasks, but with lower throughput.
+
+Until quota is available again:
+
+- avoid repeated full-range RF runs;
+- temporarily remove five-fold cross-validation;
+- reduce tree count to 100–150 for diagnostics;
+- test on a smaller region first;
+- separate map classification from area summaries;
+- use local VS Code only after exporting the required predictor/sample data.
+
+Calling Earth Engine through the Python API still uses Earth Engine project
+compute. A local GPU helps only for data and models already downloaded locally.
+
+## 8. Public repository and local setup
+
+The public GitHub repository is:
+
+`https://github.com/adericchoo/langur-habitat-monitoring`
+
+The continuation environment is under:
+
+`D:\AIforgood x SUTD\Pipeline`
+
+The public-safe pipeline contains:
+
+- `pipeline/python/` — Earth Engine connection test and requirements;
+- `pipeline/gee/scripts/public/` — public historical template;
+- `pipeline/gee/HANDOFF.md` — this handoff;
+- `pipeline/docs/` — project context, model research and step-by-step flow;
+- `data-contract/` and `web/` — frontend-facing structure.
+
+Do not commit private asset IDs, precise sightings, raw training polygons,
+private exports or sensitive screenshots.
+
+## 9. Immediate next actions
+
+1. Run the corrected RF V2 script only once quota allows.
+2. Confirm six-class sample counts and the RF confusion matrices.
+3. Save the RF summary values and map screenshot.
+4. Create independent validation polygons.
+5. Run the same evaluation protocol for CART, Gradient Boosting and SVM.
+6. Freeze the selected model and document the reason for selection.
+7. Define fragmentation, corridor, risk and report-generation outputs.
+8. Complete the historical five-year exports and metadata table.
+9. Prepare the frontend data contract and cached report payload.
+
+## 10. Handoff rule
+
+No current layer should be described as confirmed habitat, confirmed quarry,
+confirmed karst or confirmed forest loss without SVW/reference validation.
