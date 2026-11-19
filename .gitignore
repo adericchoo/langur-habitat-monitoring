@@ -191,3 +191,7 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# policy-bank outputs — briefs are regenerated from the scorer's output and are
+# kept out of git until Save Vietnam's Wildlife has reviewed them.
+pipeline/policy-bank/outputs/
