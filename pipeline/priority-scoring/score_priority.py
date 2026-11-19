@@ -183,4 +183,5 @@ if __name__ == "__main__":
     res = score(*a)
     print(f"{'site':<22}{'priority':>9}  reasons")
     for r in res:
-        print(f"{r['site_id']:<22}{r['priority']:>9}  {r['why']}")
+        shown = "unscored" if r["priority"] is None else r["priority"]
+        print(f"{r['site_id']:<22}{shown:>9}  {r['why']}")
