@@ -1,0 +1,9 @@
+hotspot_id,site_id,run_year,change_class,t_area_ha,t_rate_ha_yr,t_accel,t_first_year,t_persist_years,v_remaining_ha,v_canopy_frac,v_langur_dist_m,v_site_last_record_year,v_occupancy,v_irrepl,e_adjacent_ha,e_edge_frac,e_connect_critical,g_protected,g_designation,g_iucn_cat,g_unlicensed,g_access_km,truncated,years_of_history,build_run_id
+HS-2025-001,Van Long,2025,forest_to_quarry,14.0,3.5,1.8,2024,2,3000,0.8,150,2024,confirmed,1.0,12,0.35,TRUE,inside,Nature Reserve,Not Reported,1,4,FALSE,8,SAMPLE-RUN
+HS-2025-002,Kim Bang,2025,forest_to_quarry,3.2,0.8,1.2,2023,3,2200,0.7,400,2024,confirmed,0.9,5,0.15,FALSE,buffer,none,none,0,6,FALSE,8,SAMPLE-RUN
+HS-2025-003,Tam Diep,2025,forest_to_quarry,9.5,2.4,1.6,2022,4,600,0.5,900,2010,historical_unsurveyed,0.6,8,0.30,TRUE,outside,none,none,1,15,FALSE,8,SAMPLE-RUN
+HS-2025-004,Hoa Lu,2025,forest_to_agriculture,2.1,0.4,0.9,2021,5,900,0.4,1200,2018,confirmed,0.5,3,0.10,FALSE,inside,World Heritage Site,Not Reported,,10,FALSE,8,SAMPLE-RUN
+HS-2025-005,Cuc Phuong,2025,forest_to_agriculture,1.0,0.2,0.8,2020,5,4500,0.9,3000,2005,no_record,0.3,1.5,0.05,FALSE,buffer,National Park,II,,25,FALSE,8,SAMPLE-RUN
+HS-2025-006,Pu Luong,2025,forest_to_urban,0.6,0.1,0.7,2019,2,3800,0.8,5000,2012,historical_unsurveyed,0.4,0.8,0.02,FALSE,outside,none,none,,40,FALSE,8,SAMPLE-RUN
+HS-2025-007,Kim Bang,2025,forest_to_quarry,6.0,1.5,1.4,2025,1,2200,0.6,300,2024,confirmed,0.9,7,0.20,TRUE,outside,none,none,0,5,FALSE,8,SAMPLE-RUN
+HS-2025-008,Huong Son,2025,forest_to_quarry,0.9,,,2025,,1500,0.5,2500,2015,no_record,0.3,1.0,0.04,FALSE,inside,Cultural/Historical Landscape,V,1,30,TRUE,2,SAMPLE-RUN

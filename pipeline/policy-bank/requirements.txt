@@ -1,0 +1,4 @@
+# Policy bank (pipeline/policy-bank/policy_bank.py)
+# Install into a venv:  python -m venv .venv && .venv/Scripts/activate && pip install -r pipeline/policy-bank/requirements.txt
+pyyaml>=6.0
+pytest>=7.0
