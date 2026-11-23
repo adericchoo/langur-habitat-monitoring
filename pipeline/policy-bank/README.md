@@ -27,6 +27,14 @@ The policy bank reads both files as the scorer already produces and consumes
 them. Neither file's columns change. Without the scorer input, matching runs on
 the change class alone and each brief says which attributes were not available.
 
+Both files come from the priority-scoring step. On real data, run
+`pipeline/priority-scoring/build_hotspots.py` first (see that folder's README),
+then the scorer, then this step. Every `change_class` in the scored file must
+have an entry under `drivers` in `policy_config.yaml`; the run stops and names
+any that don't, so a new change class is never guessed into the wrong driver.
+Site ids from the build step (e.g. `tam-diep-forest-nb`) are shown in briefs by
+the display names under `site_labels`.
+
 ## Method
 
 **1. Select.** The `max_briefs` (3) highest-priority scored hotspots, in the
@@ -88,7 +96,7 @@ Keep keys in the environment or an untracked `.env`; never commit them.
 python -m venv .venv && .venv/Scripts/activate   # Windows; use source .venv/bin/activate elsewhere
 pip install -r pipeline/policy-bank/requirements.txt
 
-# 1. score the sample hotspots (writes the two CSVs into outputs/)
+# 1. score the sample hotspots (writes the scorer's outputs into outputs/)
 mkdir pipeline/policy-bank/outputs
 python pipeline/priority-scoring/score_priority.py pipeline/policy-bank/sample/hotspots-scoring-input.csv pipeline/policy-bank/outputs/priority-areas.csv pipeline/priority-scoring/priority_config.yaml pipeline/policy-bank/outputs/hotspots-scored.csv
 
@@ -110,7 +118,8 @@ reviewed):
 
 `sample/hotspots-scoring-input.csv` is **synthetic**: eight invented hotspots
 on publicly-known site names, shaped like the scorer's input, with no
-coordinates. Its numbers are not findings.
+coordinates. Its numbers are not findings. To brief the real run instead, point
+`--scored` and `--inputs` at the files in `pipeline/priority-scoring/outputs/`.
 
 ## The case bank
 
@@ -120,7 +129,14 @@ India). The design target is 30 to 50.
 
 To add a case, copy an entry and fill every field. The tests check that each
 case has a source, that its switches use known values, and that each
-precondition has either a `check` or a `status`. Rules for curating:
+precondition has either a `check` or a `status`.
+
+A case that switches on `g_protected`, `licence` or `v_occupancy` also needs a
+`fit_note_if_assumed` entry for that switch: the wording the brief uses when
+that attribute is blank for a hotspot. Without it, a brief would state the
+unknown as fact (the first real run had no licence data, and the deposit case
+claimed the patch sat "inside a known concession"). The bank refuses to load a
+case that is missing it. Rules for curating:
 
 - Every figure in `evidence` comes from a listed source.
 - Mark each source `full_text` or `search_excerpt` honestly. Excerpt-only
@@ -139,7 +155,11 @@ precondition has either a `check` or a `status`. Rules for curating:
   research, to be replaced by SVW's and legal partners' judgment.
 - **Matching depends on the scorer input's governance columns.** Where
   `g_protected` or `g_unlicensed` is blank, options are listed on the
-  assumption they apply and the brief names the missing attribute.
+  assumption they apply, the brief names the missing attribute, and the
+  option's "why it fits" is worded conditionally. On the first real run
+  (2017 -> 2025) licence status is blank for every hotspot, because no
+  concession list exists yet; the remediation-deposit option therefore always
+  appears as conditional.
 - **The summary step has not been run against a live endpoint yet**; its
   checks are covered by tests with a stubbed model.
 

@@ -61,6 +61,11 @@ def load_bank(path):
             raise ValueError(f"case {case['id']} has unknown kind {case['kind']}")
         if not case["sources"]:
             raise ValueError(f"case {case['id']} has no source")
+        alt = case.get("fit_note_if_assumed", {})
+        for key in case["applies_when"]:
+            if key in ATTRIBUTE_SWITCHES and key not in alt:
+                raise ValueError(f"case {case['id']} switches on {key} but has no "
+                                 f"fit_note_if_assumed.{key} for when it is unknown")
         seen.add(case["id"])
     return bank
 
@@ -88,7 +93,8 @@ def hotspot_facts(row, inputs_by_id, cfg):
     facts = {k: row[k] for k in ("hotspot_id", "site_id", "run_year", "change_class",
                                  "tier", "action", "why")}
     facts["priority"] = float(row["priority"])
-    facts["driver"] = cfg["drivers"].get(row["change_class"], "other")
+    facts["site_name"] = cfg.get("site_labels", {}).get(row["site_id"], row["site_id"])
+    facts["driver"] = cfg["drivers"][row["change_class"]]  # checked in run()
     for name in ATTRIBUTES:
         facts[name] = (src.get(name) or "").strip()
     licence = facts["g_unlicensed"]
@@ -141,6 +147,27 @@ def transferability(case, facts):
     return grade, conditions
 
 
+ATTRIBUTE_SWITCHES = ("g_protected", "licence", "v_occupancy")
+
+
+def fit_text(case, assumed):
+    """Why the case fits, worded for what is actually known.
+
+    When a switch's attribute is blank for this hotspot, the case's
+    fit_note_if_assumed text replaces fit_note, so the brief never states an
+    unknown (e.g. "inside a known concession") as fact.
+    """
+    if assumed:
+        alt = case.get("fit_note_if_assumed", {})
+        parts = [" ".join(alt[k].split()) for k in assumed if k in alt]
+        if parts:
+            return " ".join(parts)
+        names = " and ".join(SWITCH_NAMES[k] for k in assumed)
+        return (f"This depends on the {names}, which is not yet known for this hotspot. "
+                + " ".join(case["fit_note"].split()))
+    return " ".join(case["fit_note"].split())
+
+
 def origin_label(case):
     if case["jurisdiction"] != "Vietnam":
         return f"Precedent from {case['jurisdiction']}"
@@ -165,7 +192,7 @@ def match(facts, bank, cfg):
             "case_id": case["id"], "kind": case["kind"], "name": case["name"],
             "country": case["jurisdiction"], "origin": origin_label(case),
             "description": " ".join(case["summary"].split()),
-            "howItFits": " ".join(case["fit_note"].split()),
+            "howItFits": fit_text(case, assumed),
             "evidence": " ".join(case["evidence"].split()),
             "outcome": case["outcome"],
             "limitations": " ".join(case["limitations"].split()),
@@ -213,7 +240,7 @@ STATUS_MARK = {"met": "met", "partial": "partly met", "not_met": "not met", "unk
 
 def render_markdown(brief, not_briefed, provenance, cfg):
     f, kind = brief["facts"], cfg["brief_types"][brief["facts"]["action"]]
-    out = [f"# {kind['title']}: {f['site_id']} ({f['hotspot_id']})", "",
+    out = [f"# {kind['title']}: {f['site_name']} ({f['hotspot_id']})", "",
            f"Run year {f['run_year']} | priority {f['priority']} ({f['tier']}) | triage action: {f['action']}",
            "", f"> {' '.join(cfg['caveat'].split())}", "",
            " ".join(kind["lead"].split()), ""]
@@ -266,6 +293,11 @@ def run(path_scored, path_inputs, path_out, path_bank=HERE / "policy_cases.yaml"
     bank = load_bank(path_bank)
     scored = read_csv(path_scored)
     inputs_by_id = {r["hotspot_id"]: r for r in read_csv(path_inputs)} if path_inputs else {}
+    unmapped = sorted({r["change_class"] for r in scored} - set(cfg["drivers"]))
+    if unmapped:
+        raise SystemExit(f"change class(es) {unmapped} have no driver in "
+                         f"{Path(path_cfg).name}; add them under `drivers` and "
+                         f"`change_labels` rather than letting them be guessed")
     chosen, not_briefed = select(scored, cfg["max_briefs"])
     provenance = {"bank_version": bank["bank_version"], "bank_hash": file_hash(path_bank),
                   "config_version": cfg["config_version"], "config_hash": file_hash(path_cfg)}
@@ -276,6 +308,7 @@ def run(path_scored, path_inputs, path_out, path_bank=HERE / "policy_cases.yaml"
         options, set_aside = match(facts, bank, cfg)
         briefs.append({
             "hotspot_id": facts["hotspot_id"], "site_id": facts["site_id"],
+            "site_name": facts["site_name"],
             "priority": facts["priority"], "tier": facts["tier"], "action": facts["action"],
             "brief_type": cfg["brief_types"][facts["action"]]["title"],
             "facts": facts, "context": context_lines(facts, cfg),
@@ -313,8 +346,8 @@ if __name__ == "__main__":
         print(f"note: {a.inputs} not found; matching runs on change class alone", file=sys.stderr)
         a.inputs = None
     res = run(a.scored, a.inputs, a.out, narrate=a.narrate)
-    print(f"{'hotspot':<14}{'site':<14}{'priority':>9}  {'action':<11}options")
+    print(f"{'hotspot':<14}{'site':<22}{'priority':>9}  {'action':<11}options")
     for b in res["briefs"]:
         ids = ", ".join(f"{o['case_id']} ({o['grade']})" for o in b["options"]) or "none"
-        print(f"{b['hotspot_id']:<14}{b['site_id']:<14}{b['priority']:>9}  {b['action']:<11}{ids}")
+        print(f"{b['hotspot_id']:<14}{b['site_name']:<22}{b['priority']:>9}  {b['action']:<11}{ids}")
     print(f"not briefed: {res['not_briefed']['count']}  ->  {a.out}")

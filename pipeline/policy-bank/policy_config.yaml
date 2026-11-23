@@ -1,4 +1,4 @@
-config_version: "0.1-provisional"
+config_version: "0.2-provisional"
 note: >
   Every tunable the policy bank uses lives in this file: how many hotspots are
   briefed, how many options a brief carries, how a change class maps to a loss
@@ -17,6 +17,7 @@ max_precedents: 2
 # policy step already uses).
 drivers:
   forest_to_quarry: mining
+  bare_rock_extraction: mining
   forest_to_agriculture: farming
   forest_to_urban: other
 
@@ -27,6 +28,7 @@ driver_labels:
 
 change_labels:
   forest_to_quarry: forest to quarry
+  bare_rock_extraction: quarrying on bare rock
   forest_to_agriculture: forest to agriculture
   forest_to_urban: forest to built-up land
 
@@ -79,3 +81,14 @@ caveat: >
   Screening output. The hotspot is a suspected land-cover change from satellite
   classification, and the options are matched from a curated case bank by fixed
   rules. Save Vietnam's Wildlife reviews every brief before it is used.
+
+# Display names for the scorer's site ids. The build step writes slugs; the
+# synthetic sample already uses display names, which pass through unchanged.
+site_labels:
+  pu-luong-karst: Pu Luong
+  cuc-phuong: Cuc Phuong
+  hoa-lu-trang-an: Hoa Lu / Trang An
+  tam-diep-forest-nb: Tam Diep
+  huong-son-lac-thuy: Huong Son - Lac Thuy
+  kim-bang: Kim Bang
+  van-long-dong-tam: Van Long - Dong Tam

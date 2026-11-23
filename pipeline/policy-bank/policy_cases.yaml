@@ -8,6 +8,12 @@
 #   applies_when   Eligibility switches, matched against the hotspot's own
 #                  attributes. Keys: driver, g_protected, licence, v_occupancy.
 #                  A case with no entry for a key applies to every value.
+#   fit_note       Why the case fits a hotspot whose attributes match.
+#   fit_note_if_assumed
+#                  Replaces fit_note when a switch's attribute is blank for the
+#                  hotspot (e.g. licence status not yet known), so the brief never
+#                  states the unknown as fact. Required for every switch on
+#                  g_protected, licence or v_occupancy; a test enforces it.
 #   preconditions  What has to be true for the case to work at this hotspot.
 #                  `check` tests a hotspot attribute; `status` is the curator's
 #                  reading for Vietnam (met | partial | not_met | unknown).
@@ -20,7 +26,7 @@
 # Every figure in `evidence` comes from the listed sources. Sources were
 # accessed on 2026-11-19.
 
-bank_version: "0.1"
+bank_version: "0.2"
 
 cases:
   - id: VN-MINERALS-2024
@@ -44,6 +50,12 @@ cases:
       Quarrying on special-use forest land falls inside the category the law
       names as prohibited, so the request to the province is to enforce an
       existing prohibition.
+    fit_note_if_assumed:
+      g_protected: >
+        Whether the patch is inside a protected area is not yet known. If it
+        is, quarrying there falls inside the category the law names as
+        prohibited, and the request to the province is to enforce an existing
+        prohibition.
     preconditions:
       - text: The patch is on land classified as special-use or protection forest
         check: {field: g_protected, in: [inside]}
@@ -89,6 +101,13 @@ cases:
       The patch is inside a known concession, so a deposit and a remediation
       plan should already exist. The request is for the province to check the
       plan covers the cleared forest and to hold the operator to it.
+    fit_note_if_assumed:
+      licence: >
+        Whether the quarry holds a licence is not yet known. If it does, a
+        deposit and a remediation plan should already exist, and the request
+        is for the province to check the plan covers the cleared forest and to
+        hold the operator to it. If it does not, this option falls away and
+        the patch is an unlicensed operation.
     preconditions:
       - text: The quarry holds a licence, so a deposit and a remediation plan exist
         check: {field: g_unlicensed, in: ["0"]}
@@ -128,6 +147,12 @@ cases:
       Loss of forest inside a protected area is either an approved conversion
       or a prohibited act. The request is for the province to say which, and
       to produce the approval if there is one.
+    fit_note_if_assumed:
+      g_protected: >
+        Whether the patch is inside a protected area is not yet known. If it
+        is, the loss of forest there is either an approved conversion or a
+        prohibited act, and the request is for the province to say which and
+        to produce the approval if there is one.
     preconditions:
       - text: The patch is inside a protected area managed as special-use forest
         check: {field: g_protected, in: [inside]}
@@ -208,6 +233,12 @@ cases:
     fit_note: >
       This is the one Delacour's langur population reported as growing, and it
       is in the same province and legal system as the flagged patch.
+    fit_note_if_assumed:
+      g_protected: >
+        This is the one Delacour's langur population reported as growing, in
+        the same province and legal system as the flagged patch. Its model
+        works through a protected area and its buffer zone, and whether the
+        patch lies in one is not yet known.
     preconditions:
       - text: A management board with enforcement powers covers the site
         check: {field: g_protected, in: [inside]}
@@ -249,6 +280,11 @@ cases:
     fit_note: >
       The patch is quarry expansion on langur habitat without reserve status,
       which is the situation Kim Bang was in before designation.
+    fit_note_if_assumed:
+      g_protected: >
+        Whether the patch has reserve status is not yet known. If it has none,
+        it is quarry expansion on langur habitat without protection, which is
+        the situation Kim Bang was in before designation.
     preconditions:
       - text: Surveys confirm langurs at the site
         check: {field: v_occupancy, in: [confirmed]}
@@ -330,6 +366,11 @@ cases:
     fit_note: >
       The patch is quarrying outside a protected-area boundary, which is the
       gap a fixed no-mining distance closes.
+    fit_note_if_assumed:
+      g_protected: >
+        Whether the patch is inside a protected area is not yet known. If it
+        lies outside the boundary, it is the gap a fixed no-mining distance
+        closes.
     preconditions:
       - text: The patch is within a defined buffer of a protected-area boundary
         check: {field: g_protected, in: [buffer]}

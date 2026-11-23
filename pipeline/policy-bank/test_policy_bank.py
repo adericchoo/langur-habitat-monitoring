@@ -141,6 +141,44 @@ def test_a_blank_attribute_keeps_the_case_and_says_what_was_assumed(bank, cfg):
     assert law["grade"] == "confirm"
 
 
+def test_every_attribute_switch_has_wording_for_when_it_is_unknown(bank):
+    for case in bank["cases"]:
+        for key in case["applies_when"]:
+            if key in pb.ATTRIBUTE_SWITCHES:
+                assert key in case.get("fit_note_if_assumed", {}), case["id"]
+
+
+def test_load_bank_rejects_an_attribute_switch_without_unknown_wording(tmp_path, bank):
+    broken = yaml.safe_load(yaml.safe_dump(bank))
+    case = next(c for c in broken["cases"] if c["id"] == "VN-REMEDIATION-DEPOSIT")
+    del case["fit_note_if_assumed"]
+    path = tmp_path / "cases.yaml"
+    path.write_text(yaml.safe_dump(broken), encoding="utf-8")
+    with pytest.raises(ValueError, match="fit_note_if_assumed"):
+        pb.load_bank(path)
+
+
+def test_an_unknown_licence_is_never_stated_as_fact(bank, cfg):
+    options, _ = pb.match(facts(g_protected="outside", licence="", g_unlicensed=""), bank, cfg)
+    deposit = next(o for o in options if o["case_id"] == "VN-REMEDIATION-DEPOSIT")
+    assert deposit["assumed"] == ["licence"]
+    assert "not yet known" in deposit["howItFits"]
+    assert "inside a known concession" not in deposit["howItFits"]
+
+
+def test_a_known_licence_keeps_the_plain_fit_note(bank, cfg):
+    options, _ = pb.match(facts(g_protected="outside", licence="0", g_unlicensed="0"), bank, cfg)
+    deposit = next(o for o in options if o["case_id"] == "VN-REMEDIATION-DEPOSIT")
+    assert deposit["assumed"] == []
+    assert "inside a known concession" in deposit["howItFits"]
+
+
+def test_bare_rock_extraction_is_briefed_as_quarrying(cfg):
+    assert cfg["drivers"]["bare_rock_extraction"] == "mining"
+    line = pb.context_lines(facts(change_class="bare_rock_extraction", driver="mining"), cfg)[0]
+    assert "quarrying" in line and "built-up" not in line
+
+
 def test_a_brief_carries_at_most_the_configured_number_of_each_kind(bank, cfg):
     options, _ = pb.match(facts(g_protected="buffer", licence="0", g_unlicensed="0"), bank, cfg)
     kinds = [o["kind"] for o in options]
@@ -193,6 +231,32 @@ def test_survey_gap_rows_get_the_survey_first_brief(scored, tmp_path, cfg):
     assert first["brief_type"] == "Survey-first brief"
     md = (tmp_path / "out" / "briefs" / f"{first['hotspot_id']}.md").read_text(encoding="utf-8")
     assert "field survey" in md
+
+
+def _edit_first_row(scored, tmp_path, **changes):
+    rows = list(csv.DictReader(open(scored)))
+    rows[0].update(changes)
+    edited = tmp_path / "edited.csv"
+    with open(edited, "w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(rows[0]))
+        w.writeheader()
+        w.writerows(rows)
+    return edited
+
+
+def test_an_unmapped_change_class_stops_the_run(scored, tmp_path):
+    edited = _edit_first_row(scored, tmp_path, change_class="forest_to_something_new")
+    with pytest.raises(SystemExit, match="forest_to_something_new"):
+        pb.run(edited, SAMPLE, tmp_path / "out")
+
+
+def test_site_slugs_from_the_build_step_are_shown_by_name(scored, tmp_path):
+    edited = _edit_first_row(scored, tmp_path, site_id="tam-diep-forest-nb")
+    payload = pb.run(edited, SAMPLE, tmp_path / "out")
+    brief = next(b for b in payload["briefs"] if b["site_id"] == "tam-diep-forest-nb")
+    assert brief["site_name"] == "Tam Diep"
+    md = (tmp_path / "out" / "briefs" / f"{brief['hotspot_id']}.md").read_text(encoding="utf-8")
+    assert md.startswith("# ") and "Tam Diep" in md.splitlines()[0]
 
 
 # --- the optional model summary -------------------------------------------
