@@ -26,6 +26,10 @@ __pycache__/
 .venv/
 .ipynb_checkpoints/
 
+# priority-scoring outputs — hotspot rows carry precise quarry coordinates;
+# per SECURITY.md they never enter git.
+pipeline/priority-scoring/outputs/
+
 # habitat-loss metric outputs — review before publishing; the CSV is aggregated
 # (safe tier) but kept out of git until a human has checked it.
 pipeline/metrics/outputs/
