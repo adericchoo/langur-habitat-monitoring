@@ -18,10 +18,24 @@ WDPA / site polygons   ─┘       (4a: collate)        (the contract)         
   mean across T/V/E/G, tiers P1/P2/P3. Re-running with new weights takes
   seconds and never touches a raster.
 
-The deliverable `priority-areas.csv` has four columns: `hotspot_id`,
-`site_id`, `priority`, `reasons`. The `hotspot_id` is what lets someone in
-the field find the specific patch; `hotspots-scored.csv` is the wider audit
-copy with every dimension read.
+The scorer writes three files into the folder of its output path:
+
+| file | for | contents |
+| --- | --- | --- |
+| `priority-areas.csv` | people | ranked: `hotspot_id`, `site_id`, `priority`, `reasons` |
+| `priority-areas.json` | dashboard, policy bank | the same ranking plus provenance and a per-site summary |
+| `hotspots-scored.csv` | audit, sensitivity analysis | every dimension read per hotspot |
+
+The `hotspot_id` is what lets someone in the field find the specific patch.
+
+**New to the outputs?** [READING_THE_OUTPUTS.md](READING_THE_OUTPUTS.md) explains how to read a row, what the tiers and reasons mean, and why the scores come out the way they do, including the limits of the current two-date run.
+
+`priority-areas.json` (`schema: priority-areas/v1`) has three parts:
+- `provenance`: config version and hash, whether weights were elicited, build run ids, weights and tier thresholds
+- `summary`: counts by tier and action, and per site the number of hotspots per tier and the top-ranked hotspot
+- `hotspots`: one object per hotspot, in rank order, with `rank`, `priority`, `tier`, `action`, structured `reasons` (`indicator`, `dimension`, `label`, `value`), the four `dimensions` reads and `missing_indicators`
+
+Like the CSVs, it contains no coordinates.
 
 The full design rationale lives in the team's framework doc
 (hotspot-priority-scoring-framework).
@@ -103,10 +117,14 @@ clamp [0, 0.05]. Result: scores spread 25-65, tiers 2 P1 / 31 P2 / 150 P3.
 Treat these anchors as fixed from here: changing one breaks comparability
 with earlier runs.
 
-Known issue in two-date mode: `t_area_ha` and `t_rate_ha_yr` are perfectly
-collinear (rate = area / 8), so patch size counts twice in Threat. Dropping
-either pushes Threat below the 50% coverage rule. It resolves once yearly
-classifications make the rate independent.
+Known issues in two-date mode, both resolved once yearly classifications exist:
+- `t_area_ha` and `t_rate_ha_yr` are perfectly collinear (rate = area / 8),
+  so patch size counts twice in Threat. Dropping either pushes Threat below
+  the 50% coverage rule.
+- Every patch has `t_first_year = 2017`, so recency reads 0.05 for all rows
+  and caps every threat read at 0.683. Ranking order is unaffected, but all
+  scores sit lower (the top patch would be 72.5, not 64.7), so tier counts
+  are conservative.
 
 Scope: patches within 1,000 m of one of the 7 current DL areas (strict
 "inside" would drop the quarry faces advancing on a site from just outside
