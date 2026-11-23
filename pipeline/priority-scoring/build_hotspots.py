@@ -163,6 +163,17 @@ def harmonise_records(pack_dir):
     return out
 
 
+def load_d0(config_path):
+    """d0 for v_langur_dist_m from the scorer's config (fallback 750 m)."""
+    try:
+        import yaml
+        cfg = yaml.safe_load(open(config_path))
+        return float(cfg["value_functions"]["v_langur_dist_m"]["d0"])
+    except Exception:
+        print("  (priority_config.yaml not found; using d0 = 750 m)")
+        return 750.0
+
+
 def main(args):
     pack = Path(args.pack)
     y0, y1 = args.year_early, args.year_late
@@ -228,13 +239,25 @@ def main(args):
              for i, s in enumerate(sites["slug"])}
     patches["v_remaining_ha"] = patches["site_id"].map(v_rem)
 
-    # v_langur_dist_m + nearest record's year/weight
-    near = gpd.sjoin_nearest(patches, records, how="left",
-                             distance_col="v_langur_dist_m")
-    near = near[~near.index.duplicated(keep="first")]
-    patches["v_langur_dist_m"] = near["v_langur_dist_m"].round(0)
-    patches["v_record_year"] = near["year"].astype("Int64")
-    patches["record_reliability"] = near["weight"]
+    # Best evidence nearby: the record maximising reliability x proximity,
+    # with proximity = exp(-d / d0) and d0 read from priority_config.yaml so
+    # the builder and scorer agree. Taking the plain nearest record would let
+    # a weak record close by (e.g. an interview 45 m away) mask a strong one
+    # just behind it (a direct observation 250 m away). The CSV still carries
+    # raw units: the chosen record's distance (m), year and reliability.
+    d0 = load_d0(args.config)
+    rec_xy = np.column_stack([records.geometry.x, records.geometry.y])
+    rec_w = records["weight"].to_numpy()
+    rec_year = records["year"].to_numpy()
+    best_d, best_w, best_y = [], [], []
+    for geom in patches.geometry:
+        d = np.array([geom.distance(pt) for pt in records.geometry])
+        k = int(np.argmax(rec_w * np.exp(-d / d0)))
+        best_d.append(round(float(d[k]))); best_w.append(rec_w[k])
+        best_y.append(rec_year[k])
+    patches["v_langur_dist_m"] = best_d
+    patches["v_record_year"] = pd.array(best_y, dtype="float").astype("Int64")
+    patches["record_reliability"] = best_w
 
     # per-site evidence
     rec_in = gpd.sjoin(records, sites[["slug", "geometry"]], how="inner",
@@ -366,4 +389,7 @@ if __name__ == "__main__":
     ap.add_argument("--year-late", type=int, default=2025)
     ap.add_argument("--pack", required=True)
     ap.add_argument("--out", default="outputs/hotspots-scoring-input.csv")
+    ap.add_argument("--config",
+                    default=str(Path(__file__).with_name("priority_config.yaml")),
+                    help="scorer config, read only for the langur-distance d0")
     main(ap.parse_args())

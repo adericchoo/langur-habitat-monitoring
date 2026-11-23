@@ -50,6 +50,17 @@ def num(v):
     return None if v in ("", None) else float(v)
 
 
+def reliability_weighted(proximity, reliability, vf):
+    """Closeness to a langur record, discounted by how good that record is.
+
+    A patch 300 m from an interview report is weaker evidence than one 300 m
+    from a drone-confirmed group. A missing reliability leaves proximity as is.
+    """
+    if proximity is None or reliability is None:
+        return proximity
+    return proximity * apply_fn(vf["record_reliability"], reliability)
+
+
 def build_indicators(row, cfg):
     """Returns {dimension: {indicator_name: normalised value or None}}."""
     vf, orD = cfg["value_functions"], cfg["ordinals"]
@@ -68,7 +79,9 @@ def build_indicators(row, cfg):
         "value": {
             "v_remaining_ha": f("v_remaining_ha", num(row["v_remaining_ha"])),
             "v_canopy_frac": f("v_canopy_frac", num(row["v_canopy_frac"])),
-            "v_langur_dist_m": f("v_langur_dist_m", num(row["v_langur_dist_m"])),
+            "v_langur_dist_m": reliability_weighted(
+                f("v_langur_dist_m", num(row["v_langur_dist_m"])),
+                num(row.get("record_reliability")), vf),
             "v_evidence_years": f("v_evidence_years", yr - int(row["v_site_last_record_year"])),
             "v_occupancy": o("v_occupancy", row["v_occupancy"]),
             "v_irrepl": f("v_irrepl", num(row["v_irrepl"])),
@@ -162,12 +175,12 @@ def score(path_in, path_out, path_cfg="priority_config.yaml",
 
     out.sort(key=lambda d: (d["priority"] is None, -(d["priority"] or 0)))
 
-    # The deliverable: three columns, ranked.
+    # The deliverable: four columns, ranked.
     with open(path_out, "w", newline="") as fh:
         w = csv.writer(fh)
-        w.writerow(["site_id", "priority", "reasons"])
+        w.writerow(["hotspot_id", "site_id", "priority", "reasons"])
         for r in out:
-            w.writerow([r["site_id"], r["priority"], r["why"]])
+            w.writerow([r["hotspot_id"], r["site_id"], r["priority"], r["why"]])
 
     # The audit copy: every dimension read, for the sensitivity analysis and
     # for answering "why is this one above that one".
@@ -181,6 +194,6 @@ def score(path_in, path_out, path_cfg="priority_config.yaml",
 if __name__ == "__main__":
     a = sys.argv[1:] or ["hotspots-scoring-input.csv", "priority-areas.csv"]
     res = score(*a)
-    print(f"{'site':<22}{'priority':>9}  reasons")
+    print(f"{'hotspot':<13}{'site':<22}{'priority':>9}  reasons")
     for r in res:
-        print(f"{r['site_id']:<22}{r['priority']:>9}  {r['why']}")
+        print(f"{r['hotspot_id']:<13}{r['site_id']:<22}{r['priority']:>9}  {r['why']}")
