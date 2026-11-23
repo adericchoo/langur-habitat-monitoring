@@ -1,13 +1,17 @@
-config_version: "0.2-provisional"
+config_version: "0.3-provisional"
 note: >
-  Every tunable the policy bank uses lives in this file: how many hotspots are
+  Every tunable the policy bank uses lives in this file: how many sites are
   briefed, how many options a brief carries, how a change class maps to a loss
   driver, and the wording each triage action leads with.
   All values are provisional until Save Vietnam's Wildlife has reviewed the
   first briefs.
 
-# Selection: the highest-priority scored hotspots, in the scorer's own order.
+# Selection: the sites with the highest-priority scored patches, one brief per
+# site. Policies act on a site or province, not on a single patch.
 max_briefs: 3
+
+# How many of a site's highest-ranked patches the brief lists by name.
+top_patches_shown: 5
 
 # Options per brief: laws in force first, then precedents.
 max_instruments: 2
@@ -34,28 +38,32 @@ change_labels:
 
 # The scorer's triage action decides how a brief is framed.
 brief_types:
+# A site's brief takes the most urgent action among its patches
+# (act, then survey_gap, then watch, then log).
   act:
     title: Escalation brief
     lead: >
-      This hotspot is in the top priority tier. The options below are ones to
-      raise at the next board meeting.
+      At least one patch at this site is in the top priority tier. The options
+      below are ones to raise at the next board meeting.
   watch:
     title: Monitoring brief
     lead: >
-      This hotspot is in the middle priority tier. The options below are worth
-      preparing now so they are ready if next year's run shows further loss.
+      This site's highest-ranked patches are in the middle priority tier. The
+      options below are worth preparing now so they are ready if next year's
+      run shows further loss.
   survey_gap:
     title: Survey-first brief
     lead: >
-      Langurs were recorded here in the past but the site has not been surveyed
-      recently, and clearing is active. The first step is a field survey to
-      confirm whether langurs are still present; the options below are for
-      after that survey reports.
+      Langurs were recorded at this site in the past but it has not been
+      surveyed recently, and clearing is active. The first step is a field
+      survey to confirm whether langurs are still present; the options below
+      are for after that survey reports.
   log:
     title: For-the-record brief
     lead: >
-      This hotspot is in the lowest priority tier. It is briefed because it is
-      among the highest-ranked this run; the options below are for reference.
+      This site's patches are in the lowest priority tier. It is briefed because
+      it is among the highest-ranked this run; the options below are for
+      reference.
 
 protected_labels:
   inside: inside a protected area
@@ -73,14 +81,23 @@ occupancy_labels:
 
 # Transferability grades, best first. A brief lists options in this order.
 grades:
+  in_place: already in place here, check it is working
   ready: ready to raise
   confirm: conditions to confirm first
   groundwork: needs groundwork first
 
+# Printed in every brief, so a reader without the README knows what a grade means.
+grade_legend: >
+  Each option lists what has to be true for it to work at this site. Ready to
+  raise: all of it is met. Conditions to confirm first: some of it is unknown or
+  only partly met, and nothing fails. Needs groundwork first: at least one
+  condition is not met. Already in place here: the measure exists at this site,
+  so the question is whether it is working.
+
 caveat: >
-  Screening output. The hotspot is a suspected land-cover change from satellite
-  classification, and the options are matched from a curated case bank by fixed
-  rules. Save Vietnam's Wildlife reviews every brief before it is used.
+  Screening output. Each flagged patch is a suspected land-cover change from
+  satellite classification, and the options are matched from a curated case bank
+  by fixed rules. Save Vietnam's Wildlife reviews every brief before it is used.
 
 # Display names for the scorer's site ids. The build step writes slugs; the
 # synthetic sample already uses display names, which pass through unchanged.

@@ -1,6 +1,6 @@
 """Optional summary paragraph for each brief, written by a language model.
 
-The model is given one brief's matched options as JSON and asked for a short
+The model is given one site brief's matched options as JSON and asked for a short
 summary a manager can read aloud. The summary is kept only when it passes
 check_narrative; a summary that fails is dropped and the brief goes out with
 its rule-built sections alone, with the reason recorded in the JSON.
@@ -15,14 +15,14 @@ server or a hosted one), configured through environment variables:
 import json, os, re, urllib.request
 
 PROMPT = """You are helping a protected-area manager in Vietnam prepare for a board meeting.
-Below is one flagged habitat-loss hotspot and the policy options matched to it from a curated case bank.
+Below is one site with flagged habitat-loss patches and the policy options matched to them from a curated case bank. Patches are grouped where they differ in protection or other attributes, and each group has its own options.
 
-Write one paragraph of at most 120 words that says what was flagged, which option is the most ready to raise and why, and what has to be confirmed first.
+Write one paragraph of at most 120 words that says what was flagged at the site, which option is the most ready to raise and why, and what has to be confirmed first.
 
 Rules:
 - Use only the facts in the JSON. Add no policy, law, place, organisation or number that is not in it.
 - Refer to each option you mention by its case_id in square brackets, e.g. [VN-PFES].
-- Describe the hotspot as a suspected change from satellite screening.
+- Describe the patches as suspected changes from satellite screening.
 - Plain sentences. No headings, no lists.
 
 JSON:
@@ -30,15 +30,21 @@ JSON:
 """
 
 
+def all_options(brief):
+    return [o for g in brief["groups"] for o in g["options"]]
+
+
 def evidence_pack(brief):
-    """The subset of a brief the model is shown."""
+    """The subset of a site brief the model is shown."""
+    def option(o):
+        return ({k: o[k] for k in ("case_id", "name", "origin", "grade_label", "description",
+                                   "howItFits", "evidence", "limitations")}
+                | {"conditions": [f"{c['text']}: {c['status']}" for c in o["conditions"]]})
     return {
-        "hotspot": {k: brief["facts"][k] for k in ("site_id", "hotspot_id", "run_year", "priority", "tier", "action")},
-        "context": brief["context"],
-        "options": [{k: o[k] for k in ("case_id", "name", "origin", "grade_label", "description",
-                                       "howItFits", "evidence", "limitations")}
-                    | {"conditions": [f"{c['text']}: {c['status']}" for c in o["conditions"]]}
-                    for o in brief["options"]],
+        "site": {k: brief[k] for k in ("site_name", "run_year", "top_priority", "top_tier", "action")}
+                | {"patches": brief["patches"]},
+        "groups": [{"patch_count": g["patch_count"], "context": g["context"],
+                    "options": [option(o) for o in g["options"]]} for g in brief["groups"]],
     }
 
 
@@ -50,7 +56,7 @@ def check_narrative(text, pack):
     material the model was shown, and that the summary is within the word limit.
     """
     problems = []
-    allowed = {o["case_id"] for o in pack["options"]}
+    allowed = {o["case_id"] for g in pack["groups"] for o in g["options"]}
     cited = set(re.findall(r"\[([A-Z]{2}-[A-Z0-9-]+)\]", text))
     if cited - allowed:
         problems.append(f"cites cases not in this brief: {sorted(cited - allowed)}")
@@ -82,7 +88,7 @@ def call_model(prompt):
 def add_narratives(briefs, call=call_model):
     """Adds `narrative` to each brief whose summary passes, `narrative_rejected` otherwise."""
     for brief in briefs:
-        if not brief["options"]:
+        if not all_options(brief):
             continue
         pack = evidence_pack(brief)
         text = call(PROMPT.format(pack=json.dumps(pack, indent=2, ensure_ascii=False)))

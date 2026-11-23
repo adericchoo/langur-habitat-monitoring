@@ -14,6 +14,10 @@
 #                  hotspot (e.g. licence status not yet known), so the brief never
 #                  states the unknown as fact. Required for every switch on
 #                  g_protected, licence or v_occupancy; a test enforces it.
+#   home_sites     Site ids or names where this case is the arrangement already
+#                  in place. There it is graded "in place" and the brief uses
+#                  at_home_site instead of fit_note and the preconditions.
+#   at_home_site   Required with home_sites: what to check at the home site.
 #   preconditions  What has to be true for the case to work at this hotspot.
 #                  `check` tests a hotspot attribute; `status` is the curator's
 #                  reading for Vietnam (met | partial | not_met | unknown).
@@ -26,7 +30,7 @@
 # Every figure in `evidence` comes from the listed sources. Sources were
 # accessed on 2026-11-19.
 
-bank_version: "0.2"
+bank_version: "0.3"
 
 cases:
   - id: VN-MINERALS-2024
@@ -239,6 +243,13 @@ cases:
         the same province and legal system as the flagged patch. Its model
         works through a protected area and its buffer zone, and whether the
         patch lies in one is not yet known.
+    home_sites: [van-long-dong-tam, Van Long]
+    at_home_site: >
+      This is the arrangement already running at Van Long, so the question is
+      whether it is working for the flagged patches, not whether to adopt it.
+      The request is for the reserve's management board to say whether it knew
+      of the clearing, whether community patrols cover this part of the
+      reserve or its buffer zone, and what enforcement followed.
     preconditions:
       - text: A management board with enforcement powers covers the site
         check: {field: g_protected, in: [inside]}
@@ -285,6 +296,15 @@ cases:
         Whether the patch has reserve status is not yet known. If it has none,
         it is quarry expansion on langur habitat without protection, which is
         the situation Kim Bang was in before designation.
+    home_sites: [kim-bang, Kim Bang]
+    at_home_site: >
+      Kim Bang was designated a conservation area in November 2026, after this
+      run's classification period, and the protected-area layer used to score
+      these patches predates it, so they read as outside any protected area.
+      The request is to check each flagged patch against the new boundary. A
+      patch inside it now falls under the conservation area's management board;
+      a patch on land excluded with the mining sites is the kind of gap the
+      designation left open.
     preconditions:
       - text: Surveys confirm langurs at the site
         check: {field: v_occupancy, in: [confirmed]}

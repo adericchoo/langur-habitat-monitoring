@@ -39,7 +39,7 @@ def scored(tmp_path):
 
 
 def facts(**over):
-    base = {"hotspot_id": "HS-T", "site_id": "Test", "run_year": "2025",
+    base = {"hotspot_id": "HS-T", "site_id": "Test", "site_name": "Test", "run_year": "2025",
             "change_class": "forest_to_quarry", "driver": "mining", "tier": "P1",
             "action": "act", "why": "area cleared (0.90)", "priority": 70.0,
             "g_protected": "inside", "g_designation": "Nature Reserve",
@@ -87,14 +87,16 @@ def test_load_bank_rejects_a_case_without_sources(tmp_path, bank):
 
 # --- select ---------------------------------------------------------------
 
-def test_select_takes_the_highest_priorities_in_order():
-    rows = [{"priority": p, "tier": t, "action": a} for p, t, a in
-            [("41.0", "P2", "watch"), ("72.5", "P1", "act"), ("", "unscored", "insufficient_data"),
-             ("55.0", "P2", "watch"), ("12.0", "P3", "log")]]
-    chosen, rest = pb.select(rows, 3)
-    assert [r["priority"] for r in chosen] == ["72.5", "55.0", "41.0"]
-    assert rest == {"count": 2, "by_tier": {"P3": 1, "unscored": 1},
-                    "by_action": {"insufficient_data": 1, "log": 1}}
+def test_select_ranks_sites_by_their_highest_priority_patch():
+    rows = [{"site_id": s, "priority": p, "tier": t, "action": a} for s, p, t, a in
+            [("A", "41.0", "P2", "watch"), ("B", "72.5", "P1", "act"), ("C", "", "unscored", "insufficient_data"),
+             ("A", "55.0", "P2", "watch"), ("D", "12.0", "P3", "log"), ("B", "", "unscored", "insufficient_data")]]
+    chosen, rest = pb.select(rows, 2)
+    assert [site for site, _ in chosen] == ["B", "A"]
+    assert [r["priority"] for r in chosen[1][1]] == ["55.0", "41.0"]   # a site's patches, best first
+    # D and C are not briefed; B's unscored row is counted, not briefed
+    assert rest == {"count": 3, "sites": ["C", "D"], "by_tier": {"P3": 1, "unscored": 2},
+                    "by_action": {"insufficient_data": 2, "log": 1}}
 
 
 # --- match ----------------------------------------------------------------
@@ -173,6 +175,39 @@ def test_a_known_licence_keeps_the_plain_fit_note(bank, cfg):
     assert "inside a known concession" in deposit["howItFits"]
 
 
+def test_a_case_at_its_home_site_is_graded_in_place(bank, cfg):
+    options, _ = pb.match(facts(site_id="van-long-dong-tam", site_name="Van Long - Dong Tam",
+                                g_protected="inside"), bank, cfg)
+    vl = next(o for o in options if o["case_id"] == "VN-VANLONG-COMMUNITY")
+    assert vl["grade"] == "in_place" and vl["conditions"] == []
+    assert "already running at Van Long" in vl["howItFits"]
+    assert options[0]["case_id"] == "VN-VANLONG-COMMUNITY"   # in place sorts first
+
+
+def test_the_same_case_elsewhere_is_a_precedent_to_raise(bank, cfg):
+    options, _ = pb.match(facts(site_id="hoa-lu-trang-an", site_name="Hoa Lu / Trang An",
+                                g_protected="inside"), bank, cfg)
+    vl = next(o for o in options if o["case_id"] == "VN-VANLONG-COMMUNITY")
+    assert vl["grade"] != "in_place" and vl["conditions"]
+
+
+def test_kim_bang_designation_at_kim_bang_asks_for_a_boundary_check(bank, cfg):
+    options, _ = pb.match(facts(site_id="kim-bang", site_name="Kim Bang", g_protected="outside",
+                                licence="", g_unlicensed=""), bank, cfg)
+    kb = next(o for o in options if o["case_id"] == "VN-KIMBANG-DESIGNATION")
+    assert kb["grade"] == "in_place" and "new boundary" in kb["howItFits"]
+
+
+def test_load_bank_rejects_home_sites_without_home_wording(tmp_path, bank):
+    broken = yaml.safe_load(yaml.safe_dump(bank))
+    case = next(c for c in broken["cases"] if c["id"] == "VN-VANLONG-COMMUNITY")
+    del case["at_home_site"]
+    path = tmp_path / "cases.yaml"
+    path.write_text(yaml.safe_dump(broken), encoding="utf-8")
+    with pytest.raises(ValueError, match="at_home_site"):
+        pb.load_bank(path)
+
+
 def test_bare_rock_extraction_is_briefed_as_quarrying(cfg):
     assert cfg["drivers"]["bare_rock_extraction"] == "mining"
     line = pb.context_lines(facts(change_class="bare_rock_extraction", driver="mining"), cfg)[0]
@@ -192,16 +227,20 @@ def test_end_to_end_from_the_scorer(scored, tmp_path, cfg):
     payload = pb.run(scored, SAMPLE, tmp_path / "out")
     briefs = payload["briefs"]
     assert len(briefs) == cfg["max_briefs"]
-    priorities = [b["priority"] for b in briefs]
-    assert priorities == sorted(priorities, reverse=True)
+    tops = [b["top_priority"] for b in briefs]
+    assert tops == sorted(tops, reverse=True)
     total = len(list(csv.DictReader(open(SAMPLE))))
-    assert payload["not_briefed"]["count"] == total - len(briefs)
+    briefed = sum(b["patches"]["count"] for b in briefs)
+    assert payload["not_briefed"]["count"] == total - briefed
     for b in briefs:
-        md = (tmp_path / "out" / "briefs" / f"{b['hotspot_id']}.md").read_text(encoding="utf-8")
-        assert b["site_id"] in md and "Screening output" in md
-        for o in b["options"]:
-            assert f"[{o['case_id']}]" in md
-            assert all(s["url"] in md for s in o["sources"])
+        md = (tmp_path / "out" / "briefs" / f"{b['site_id']}.md").read_text(encoding="utf-8")
+        assert b["site_name"] in md.splitlines()[0] and "Screening output" in md
+        assert "## How the options are graded" in md
+        assert sum(g["patch_count"] for g in b["groups"]) == b["patches"]["count"]
+        for g in b["groups"]:
+            for o in g["options"]:
+                assert f"[{o['case_id']}]" in md
+                assert all(s["url"] in md for s in o["sources"])
     assert json.loads((tmp_path / "out" / "policy-briefs.json").read_text(encoding="utf-8")) == payload
 
 
@@ -214,23 +253,33 @@ def test_the_same_inputs_give_byte_identical_output(scored, tmp_path):
 
 def test_runs_without_the_scorer_input_file(scored, tmp_path):
     payload = pb.run(scored, None, tmp_path / "out")
-    assert all(b["facts"]["g_protected"] == "" for b in payload["briefs"])
-    assert all(b["options"] for b in payload["briefs"])
+    groups = [g for b in payload["briefs"] for g in b["groups"]]
+    assert all(g["facts"]["g_protected"] == "" for g in groups)
+    assert all(g["options"] for g in groups)
 
 
-def test_survey_gap_rows_get_the_survey_first_brief(scored, tmp_path, cfg):
-    rows = list(csv.DictReader(open(scored)))
-    rows[0]["action"] = "survey_gap"
-    edited = tmp_path / "edited.csv"
-    with open(edited, "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(rows[0]))
-        w.writeheader()
-        w.writerows(rows)
-    payload = pb.run(edited, SAMPLE, tmp_path / "out")
-    first = payload["briefs"][0]
-    assert first["brief_type"] == "Survey-first brief"
-    md = (tmp_path / "out" / "briefs" / f"{first['hotspot_id']}.md").read_text(encoding="utf-8")
+def test_a_site_whose_most_urgent_patch_is_survey_gap_gets_the_survey_first_brief(scored, tmp_path):
+    payload = pb.run(scored, SAMPLE, tmp_path / "out")
+    tam = next(b for b in payload["briefs"] if b["site_name"] == "Tam Diep")   # one survey_gap patch
+    assert tam["action"] == "survey_gap" and tam["brief_type"] == "Survey-first brief"
+    md = (tmp_path / "out" / "briefs" / f"{tam['site_id']}.md").read_text(encoding="utf-8")
     assert "field survey" in md
+
+
+def test_a_site_brief_takes_its_most_urgent_action(scored, tmp_path):
+    payload = pb.run(scored, SAMPLE, tmp_path / "out")
+    kim = next(b for b in payload["briefs"] if b["site_name"] == "Kim Bang")   # one act, one watch
+    assert kim["action"] == "act" and kim["brief_type"] == "Escalation brief"
+
+
+def test_patches_that_match_differently_are_grouped_with_their_own_options(scored, tmp_path):
+    payload = pb.run(scored, SAMPLE, tmp_path / "out")
+    kim = next(b for b in payload["briefs"] if b["site_name"] == "Kim Bang")   # outside + buffer
+    assert sorted(g["facts"]["g_protected"] for g in kim["groups"]) == ["buffer", "outside"]
+    assert kim["group_by"] == ["protection status"]
+    md = (tmp_path / "out" / "briefs" / f"{kim['site_id']}.md").read_text(encoding="utf-8")
+    assert "## Options for patches outside any protected area (1 of 2)" in md
+    assert "## Options for patches in a protected-area buffer zone (1 of 2)" in md
 
 
 def _edit_first_row(scored, tmp_path, **changes):
@@ -255,7 +304,7 @@ def test_site_slugs_from_the_build_step_are_shown_by_name(scored, tmp_path):
     payload = pb.run(edited, SAMPLE, tmp_path / "out")
     brief = next(b for b in payload["briefs"] if b["site_id"] == "tam-diep-forest-nb")
     assert brief["site_name"] == "Tam Diep"
-    md = (tmp_path / "out" / "briefs" / f"{brief['hotspot_id']}.md").read_text(encoding="utf-8")
+    md = (tmp_path / "out" / "briefs" / f"{brief['site_id']}.md").read_text(encoding="utf-8")
     assert md.startswith("# ") and "Tam Diep" in md.splitlines()[0]
 
 
@@ -267,7 +316,7 @@ def brief(scored, tmp_path):
 
 
 def test_a_grounded_summary_is_kept(brief):
-    cid = brief["options"][0]["case_id"]
+    cid = narrate.all_options(brief)[0]["case_id"]
     text = f"Satellite screening suggests clearing at {brief['site_id']}. The most ready option is [{cid}]."
     narrate.add_narratives([brief], call=lambda prompt: text)
     assert brief["narrative"] == text
@@ -280,7 +329,7 @@ def test_a_summary_citing_an_unknown_case_is_dropped(brief):
 
 
 def test_a_summary_with_an_unsourced_number_is_dropped(brief):
-    cid = brief["options"][0]["case_id"]
+    cid = narrate.all_options(brief)[0]["case_id"]
     narrate.add_narratives([brief], call=lambda prompt: f"[{cid}] cut forest loss by 87 percent.")
     assert "narrative" not in brief
     assert any("87" in p for p in brief["narrative_rejected"])

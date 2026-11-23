@@ -1,17 +1,17 @@
 # Policy bank
 
-Takes the highest-priority hotspots from the priority scorer and, for each one,
-lists the policy options a manager could raise at a board meeting. Options come
+Takes the sites with the highest-priority hotspots from the priority scorer and,
+for each site, lists the policy options a manager could raise at a board meeting. Options come
 from a hand-curated bank of cases, each with its sources.
 
-**Screening, not advice.** A hotspot is a *suspected* land-cover change from
+**Screening, not advice.** Each hotspot is a *suspected* land-cover change from
 satellite classification, and the options are matched by fixed rules. Save
 Vietnam's Wildlife reviews every brief before it is used.
 
 ```
 priority-scoring                     policy-bank
 hotspots-scoring-input.csv ──┐
-        │                    ├──▶ select ─▶ match ─▶ brief ─▶ outputs/briefs/<hotspot>.md
+        │                    ├──▶ select ─▶ match ─▶ brief ─▶ outputs/briefs/<site>.md   
         ▼                    │                               outputs/policy-briefs.json
 hotspots-scored.csv ─────────┘
 ```
@@ -37,9 +37,24 @@ the display names under `site_labels`.
 
 ## Method
 
-**1. Select.** The `max_briefs` (3) highest-priority scored hotspots, in the
-scorer's order. Everything else is counted by tier and action, and every brief
-states that count, so three briefs are never read as the whole picture.
+**1. Select.** One brief per site, for the `max_briefs` (3) sites whose
+highest-priority patch ranks highest. Everything else is counted by tier and
+action, and every brief states that count, so three briefs are never read as
+the whole picture.
+
+Briefs are per site because the options act on a site or a province (a
+designation, a licence check, a provincial decision), and the real data has
+many patches per site: 27 to 42 at the top three sites in the 2017 -> 2025 run.
+One brief per patch repeated the same options for every patch.
+
+Within a site, patches are grouped by the attributes matching reads (loss
+driver, protection status and type, licence status, langur evidence). Every
+patch in a group gets the same options by construction, so each group is
+matched once and the brief gives options per group. A site where all patches
+share those attributes has one group; Van Long - Dong Tam, with patches inside
+the reserve, in its buffer zone and outside it, has three. A site's brief takes
+its most urgent action (`act`, then `survey_gap`, then `watch`, then `log`) and
+lists its top `top_patches_shown` (5) patches by name.
 
 **2. Match.** Each case in `policy_cases.yaml` carries eligibility switches
 (`applies_when`): the loss driver, protection status, licence status and langur
@@ -47,6 +62,13 @@ evidence it applies to. A case whose switch does not match the hotspot is set
 aside and the brief says why. Matching is by rule because the bank is small and
 curated: every option in a brief can be traced to the attribute that put it
 there.
+
+A case can name its **home sites** (`home_sites`): the places where it is the
+arrangement already in place, such as the Van Long community model at Van Long
+or the Kim Bang designation at Kim Bang. Offered there as a precedent to adopt,
+it would be wrong. At a home site the case is graded **already in place here**,
+listed first, and worded as a check on whether it is working
+(`at_home_site`).
 
 **3. Grade transferability.** A measure that worked somewhere else may not work
 at this hotspot. Each case lists the preconditions it depends on. A
@@ -57,6 +79,7 @@ note. The grade follows from them:
 
 | Grade | Rule |
 | --- | --- |
+| already in place here | the case is in force at this site (home site); the question is whether it is working |
 | ready to raise | every precondition met |
 | conditions to confirm first | at least one partly met or unknown, none failed |
 | needs groundwork first | at least one not met |
@@ -65,8 +88,9 @@ Options are listed best grade first, Vietnamese law before precedent, Vietnam
 before elsewhere. A brief carries at most `max_instruments` (2) laws in force
 and `max_precedents` (2) precedents.
 
-**4. Brief.** The scorer's triage action sets the framing: `act` gives an
-escalation brief, `watch` a monitoring brief, `survey_gap` a survey-first brief
+**4. Brief.** Every brief prints a one-paragraph legend of the grades, so a
+reader without this README knows what they mean. The site's triage action
+sets the framing: `act` gives an escalation brief, `watch` a monitoring brief, `survey_gap` a survey-first brief
 that leads with confirming occupancy, `log` a for-the-record brief. Each option
 shows what it is, why it fits, the evidence, the preconditions with their
 status, its limits and its sources.
@@ -110,7 +134,7 @@ python -m pytest pipeline/policy-bank
 Output goes to `pipeline/policy-bank/outputs/` (gitignored until
 reviewed):
 
-- `briefs/<hotspot_id>.md`: one brief per selected hotspot.
+- `briefs/<site_id>.md`: one brief per selected site.
 - `policy-briefs.json`: the same content for the dashboard. Each option carries
   `name`, `country`, `description`, `howItFits`, `limitations` and `sources`,
   the fields the policy step's sample bank (`web/src/samples/policyBank.ts`)
@@ -153,6 +177,11 @@ case that is missing it. Rules for curating:
   one precondition still marked unknown. That is the honest state of the bank.
 - **The curator's precondition statuses are provisional** readings from desk
   research, to be replaced by SVW's and legal partners' judgment.
+- **The protected-area layer predates the Kim Bang designation** (November
+  2026), so Kim Bang's patches score and match as outside any protected area.
+  The Kim Bang brief says so and asks for a check against the new boundary;
+  the real fix is adding the boundary to the build step's protected-area
+  layer.
 - **Matching depends on the scorer input's governance columns.** Where
   `g_protected` or `g_unlicensed` is blank, options are listed on the
   assumption they apply, the brief names the missing attribute, and the
