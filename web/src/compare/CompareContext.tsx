@@ -22,6 +22,17 @@ interface CompareStore {
   availableYears: number[]
 }
 
+/** Compare-years is a two-epoch land-cover diff, so it only carries meaning on
+ *  the steps whose metrics are a year-over-year change: Habitat loss and
+ *  Fragmentation. Everywhere else the map stays single-year and the toggle is
+ *  hidden. The shell (App) and the toggle (CompareControls) both gate on this. */
+export const COMPARE_STEPS = ['habitat-loss', 'fragmentation'] as const
+
+/** True when a step slug supports compare-years. */
+export function stepSupportsCompare(slug: string): boolean {
+  return (COMPARE_STEPS as readonly string[]).includes(slug)
+}
+
 const CompareContext = createContext<CompareStore | null>(null)
 
 /** Order a pair: distinct and ascending. If the two collapse to one year, nudge
@@ -73,4 +84,11 @@ export function useCompare(): CompareStore {
   const ctx = useContext(CompareContext)
   if (!ctx) throw new Error('useCompare must be used within a CompareProvider')
   return ctx
+}
+
+/** Like useCompare but returns null outside a CompareProvider instead of throwing.
+ *  Used by the Sidebar compare band, since Sidebar is also rendered by /gallery,
+ *  which lives outside the app shell (and its provider). */
+export function useCompareOptional(): CompareStore | null {
+  return useContext(CompareContext)
 }

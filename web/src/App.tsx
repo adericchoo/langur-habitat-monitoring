@@ -4,7 +4,7 @@ import MapStage from './components/MapStage'
 import CompareMap from './components/CompareMap'
 import Stepper from './components/Stepper'
 import { PinProvider } from './report/pins'
-import { CompareProvider, useCompare } from './compare/CompareContext'
+import { CompareProvider, useCompare, stepSupportsCompare } from './compare/CompareContext'
 import { STEPS } from './steps'
 import logoUrl from './Assets/Logo Suite_Ai for Good_edited.png'
 
@@ -36,9 +36,13 @@ function AppShell() {
 
   // Default to the latest year; the Habitat loss step's year selector updates it.
   const [mapYear, setMapYear] = useState(2025)
-  // Compare mode swaps the single-year map for the split map; single-year mode is
-  // the untouched default.
+  // Compare mode swaps the single-year map for the split map, but only on the
+  // steps whose metrics are a year-over-year diff (Habitat loss, Fragmentation).
+  // On every other step the map stays single-year even if compare is left on, so
+  // compare state survives navigation without the map going split where it has
+  // no meaning. Single-year mode is the untouched default.
   const { compareOn, baselineYear, currentYear } = useCompare()
+  const compareActive = compareOn && stepSupportsCompare(activeSlug)
 
   const logo = <img src={logoUrl} alt="AI for Good" className="h-6 w-auto" />
 
@@ -46,7 +50,7 @@ function AppShell() {
     <div className="flex h-full flex-col">
       <div className="flex min-h-0 flex-1">
         <main className="min-w-0 flex-1">
-          {compareOn ? (
+          {compareActive ? (
             <CompareMap baselineYear={baselineYear} currentYear={currentYear} />
           ) : (
             <MapStage activeStep={activeSlug} year={mapYear} />

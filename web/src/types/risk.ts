@@ -19,6 +19,9 @@ export interface RiskDimension {
   label: string
   /** Provisional weight (0–1); the four sum to 1. Shown as a "w 0.30" tag. */
   weight: number
+  /** 0–1 screening read for THIS dimension on this site — the per-dimension
+   *  signal the composite is built from, and what the panel's sort ranks on. */
+  score: number
   /** One screening-grade sentence for this dimension. */
   sentence: string
 }

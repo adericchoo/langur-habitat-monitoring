@@ -30,6 +30,15 @@ __pycache__/
 # (safe tier) but kept out of git until a human has checked it.
 pipeline/metrics/outputs/
 
+# Dev-only map overlays served to the local Vite dev server. SENSITIVE geometry
+# (e.g. habitat patches) — loaded at runtime in dev builds only, NEVER committed
+# or shipped in the public bundle.
+web/public/dev/
+# Pipeline-emitted summary metrics (aggregated/publishable tier — counts, hectares,
+# public area names, no geometry) staged for the frontend B4 loader. Kept out of git
+# until a human reviews them; the loader falls back to sample data when absent.
+web/public/data/
+
 # notes
 CLAUDE.md
 BUILD_CHECKLIST.md

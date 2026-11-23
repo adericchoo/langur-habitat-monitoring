@@ -3,7 +3,7 @@ import Map, { Layer, Source } from 'react-map-gl/maplibre'
 import type { ViewStateChangeEvent } from 'react-map-gl/maplibre'
 import type { FeatureCollection } from 'geojson'
 import { getMapColors } from '../map/mapColors'
-import { corridorSample, driverSample } from '../map/sampleLayers'
+import { corridorSample } from '../map/sampleLayers'
 import protectedAreasJson from '../map/protectedAreas.json'
 import {
   BASEMAP_BOUNDS,
@@ -12,7 +12,7 @@ import {
   resolveBasemapYearAtOrBefore,
   satelliteRaster,
 } from '../map/basemap'
-import { corridorLine, driverCircles, paOutline } from '../map/layers'
+import { corridorLine, paOutline } from '../map/layers'
 
 const protectedAreas = protectedAreasJson as FeatureCollection
 
@@ -110,9 +110,6 @@ function MapPane({
         </Source>
         <Source id="pa" type="geojson" data={protectedAreas}>
           <Layer {...paOutline(colors.paLine)} />
-        </Source>
-        <Source id="drivers" type="geojson" data={driverSample}>
-          <Layer {...driverCircles(colors)} />
         </Source>
       </Map>
 

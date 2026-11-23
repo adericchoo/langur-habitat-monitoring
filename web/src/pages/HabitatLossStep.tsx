@@ -7,7 +7,6 @@ import { usePins } from '../report/pins'
 import { habitatLossSites } from '../samples/habitatLoss'
 import type { HabitatLossSite } from '../types/contract'
 import { useCompare } from '../compare/CompareContext'
-import CompareControls from '../compare/CompareControls'
 import CompareDashboard from '../compare/CompareDashboard'
 import LayerSection, { HabitatPending } from '../components/LayerSection'
 
@@ -95,8 +94,6 @@ export default function HabitatLossStep() {
         </span>
       }
     >
-      <CompareControls />
-
       {compareOn ? (
         <CompareDashboard />
       ) : (

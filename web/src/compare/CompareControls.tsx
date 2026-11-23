@@ -1,9 +1,19 @@
-import { useCompare } from './CompareContext'
+import { useLocation } from 'react-router-dom'
+import { useCompareOptional, stepSupportsCompare } from './CompareContext'
 
 /** The "Compare years" toggle + (when on) the Baseline/Current year selects.
- *  Lives at the top of the Habitat-loss sidebar. Options are filtered so baseline
- *  is always < current and the same year can't be picked twice. */
+ *  Rendered in the Sidebar's FIXED (non-scrolling) band, but only on the steps
+ *  that support compare-years (Habitat loss, Fragmentation) — a two-epoch
+ *  land-cover diff has no meaning on the other steps, so the toggle is hidden
+ *  there (and the shell map stays single-year). Returns null outside a
+ *  CompareProvider (e.g. the standalone /gallery route). Options are filtered so
+ *  baseline is always < current and the same year can't be picked twice. */
 export default function CompareControls() {
+  const ctx = useCompareOptional()
+  const { pathname } = useLocation()
+  if (!ctx) return null
+  if (!stepSupportsCompare(pathname.replace(/^\//, ''))) return null
+
   const {
     compareOn,
     setCompareOn,
@@ -12,14 +22,14 @@ export default function CompareControls() {
     setBaselineYear,
     setCurrentYear,
     availableYears,
-  } = useCompare()
+  } = ctx
 
   const descending = [...availableYears].sort((a, b) => b - a)
   const baselineOptions = descending.filter((y) => y < currentYear)
   const currentOptions = descending.filter((y) => y > baselineYear)
 
   return (
-    <div className="mb-3 rounded-card border border-brd bg-card p-3">
+    <div className="shrink-0 border-b border-brd bg-offwhite px-5 py-3">
       <div className="flex items-center justify-between gap-3">
         <span id="compare-years-label" className="text-sm font-semibold text-navy">
           Compare years
