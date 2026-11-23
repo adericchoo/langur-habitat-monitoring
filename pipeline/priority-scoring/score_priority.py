@@ -285,7 +285,8 @@ if __name__ == "__main__":
     res = score(*a)
     print(f"{'hotspot':<13}{'site':<22}{'priority':>9}  reasons")
     for r in res:
-        print(f"{r['hotspot_id']:<13}{r['site_id']:<22}{r['priority']:>9}  {r['why']}")
+        shown = "unscored" if r["priority"] is None else r["priority"]
+        print(f"{r['hotspot_id']:<13}{r['site_id']:<22}{shown:>9}  {r['why']}")
     out_csv = a[1]
     print(f"\nwrote {out_csv}, {Path(out_csv).with_suffix('.json')}, "
           f"{Path(out_csv).with_name('hotspots-scored.csv')}")
