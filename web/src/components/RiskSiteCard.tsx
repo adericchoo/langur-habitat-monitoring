@@ -86,7 +86,9 @@ function DimensionRow({ index, dim }: { index: number; dim: RiskDimension }) {
         <span className="text-xs font-semibold uppercase tracking-wide text-teal">
           {String(index).padStart(2, '0')}&nbsp;&nbsp;{dim.label}
         </span>
-        <span className="shrink-0 text-xs text-secondary">w {dim.weight.toFixed(2)}</span>
+        <span className="shrink-0 text-xs text-secondary">
+          score {dim.score.toFixed(2)} · w {dim.weight.toFixed(2)}
+        </span>
       </div>
       <p className="mt-1 text-sm text-secondary">{dim.sentence}</p>
     </li>

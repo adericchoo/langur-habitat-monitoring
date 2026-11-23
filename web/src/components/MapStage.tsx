@@ -4,7 +4,6 @@ import Map, { Layer, Source } from 'react-map-gl/maplibre'
 import LayerControl, { type LayerToggle } from './LayerControl'
 import MapLegend from './MapLegend'
 import { getMapColors } from '../map/mapColors'
-import { corridorSample, driverSample } from '../map/sampleLayers'
 import {
   BASEMAP_BOUNDS,
   BASEMAP_INITIAL_VIEW,
@@ -13,7 +12,9 @@ import {
   resolveBasemapYear,
   satelliteRaster,
 } from '../map/basemap'
-import { corridorLine, driverCircles, paOutline } from '../map/layers'
+import { corridorLineDev, paOutline, patchFill, patchOutline } from '../map/layers'
+import { useDevPatches } from '../map/useDevPatches'
+import { useDevCorridors } from '../map/useDevCorridors'
 // NOTE: the habitat-extent polygons were removed from this repo (data + full git
 // history) as a precaution — even coarsened karst outlines are not published in
 // the public bundle. If a habitat overlay is wanted, it returns via the SVW-gated
@@ -48,11 +49,23 @@ export default function MapStage({ year }: MapStageProps) {
   const colors = useMemo(() => getMapColors(), [])
   const baseYear = resolveBasemapYear(year ?? LATEST_BASEMAP_YEAR)
   const basemapTiles = BASEMAP_TILES_BY_YEAR[baseYear]
-  const [layers, setLayers] = useState<LayerToggle[]>([
+  // DEV-ONLY habitat-patch overlay (Part A output). Data is sensitive and loaded
+  // at runtime from the gitignored web/public/dev/ folder; stripped from prod.
+  const devPatches = useDevPatches()
+  // DEV-ONLY habitat-corridor overlay (Part B output). Same sensitivity/gating as
+  // the patches: loaded at runtime from gitignored web/public/dev/, stripped from prod.
+  const devCorridors = useDevCorridors()
+  const [layers, setLayers] = useState<LayerToggle[]>(() => [
     { id: 'satellite', label: 'Satellite', enabled: true },
-    { id: 'corridors', label: 'Corridors', enabled: true },
     { id: 'pa', label: 'Protected areas', enabled: true },
-    { id: 'drivers', label: 'Drivers', enabled: true },
+    // Habitat patches / corridors are the real pipeline outputs, loaded at runtime
+    // from the gitignored web/public/dev/ folder — DEV builds only, stripped from prod.
+    ...(import.meta.env.DEV
+      ? [
+          { id: 'patches', label: 'Habitat patches', enabled: true },
+          { id: 'corridors-dev', label: 'Habitat corridors', enabled: true },
+        ]
+      : []),
   ])
 
   const isOn = (id: string) => layers.find((l) => l.id === id)?.enabled ?? false
@@ -85,19 +98,25 @@ export default function MapStage({ year }: MapStageProps) {
             <Layer {...satelliteRaster} />
           </Source>
         )}
-        {isOn('corridors') && (
-          <Source id="corridors" type="geojson" data={corridorSample}>
-            <Layer {...corridorLine(colors)} />
+        {/* DEV-ONLY: habitat patches, drawn over imagery but under the vector
+            highlights. Null (and absent entirely) in production builds. */}
+        {import.meta.env.DEV && isOn('patches') && devPatches && (
+          <Source id="patches" type="geojson" data={devPatches}>
+            <Layer {...patchFill()} />
+            <Layer {...patchOutline()} />
+          </Source>
+        )}
+        {/* DEV-ONLY: real Part B corridors, drawn over imagery/patches. Null (and
+            absent entirely) in production builds. Thin hairlines so the ~1,000+
+            link network reads as a graph. */}
+        {import.meta.env.DEV && isOn('corridors-dev') && devCorridors && (
+          <Source id="corridors-dev" type="geojson" data={devCorridors}>
+            <Layer {...corridorLineDev(colors)} />
           </Source>
         )}
         {isOn('pa') && (
           <Source id="pa" type="geojson" data={protectedAreas}>
             <Layer {...paOutline(colors.paLine)} />
-          </Source>
-        )}
-        {isOn('drivers') && (
-          <Source id="drivers" type="geojson" data={driverSample}>
-            <Layer {...driverCircles(colors)} />
           </Source>
         )}
       </Map>
@@ -111,7 +130,7 @@ export default function MapStage({ year }: MapStageProps) {
       {/* Legends share a min-width (set on MapLegend) so the corridor card is the
           same width whether or not the wider risk legend sits above it. */}
       <div className="absolute bottom-3 left-3 z-10 flex flex-col gap-2">
-        {isOn('corridors') && (
+        {isOn('corridors-dev') && (
           <MapLegend
             title="Corridors"
             items={[

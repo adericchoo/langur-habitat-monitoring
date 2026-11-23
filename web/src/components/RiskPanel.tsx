@@ -15,6 +15,24 @@ const YEAR_END = 2026
 
 const BAND_LABEL: Record<RiskBand, string> = { high: 'High', med: 'Med', low: 'Low' }
 
+// Sort keys: the composite score, or any one TVEG dimension's per-site read.
+// Dimension keys match RiskDimension['key'] so we can look the read up directly.
+type SortKey = 'composite' | RiskSite['dimensions'][number]['key']
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'composite', label: 'Composite risk score' },
+  { key: 'threat', label: 'Threat activity' },
+  { key: 'value', label: 'Habitat value at risk' },
+  { key: 'exposure', label: 'Adjacent exposure' },
+  { key: 'governance', label: 'Governance leverage' },
+]
+
+/** Value a site sorts on for the chosen key — the composite, or that dimension's
+ *  per-site read (0 if somehow absent). Both are 0–1, higher = ranked first. */
+function sortValue(site: RiskSite, key: SortKey): number {
+  if (key === 'composite') return site.score
+  return site.dimensions.find((d) => d.key === key)?.score ?? 0
+}
+
 const LOAD_STATES: RiskLoadState[] = ['loading', 'empty', 'stale', 'error', 'ready']
 
 // Until the B4 loader lands, data is the static sample. A `?risk=<state>` query
@@ -38,12 +56,14 @@ export default function RiskPanel() {
   const { mapYear: year, setMapYear: setYear } = useOutletContext<MapYearContext>()
   const { isPinned, toggle, count } = usePins()
   const [region, setRegion] = useState('overall')
+  const [sort, setSort] = useState<SortKey>('composite')
 
   const years = Array.from({ length: YEAR_END - YEAR_START + 1 }, (_, i) => YEAR_END - i)
 
-  const visible = (region === 'overall' ? sites : sites.filter((s) => s.id === region)).sort(
-    (a, b) => b.score - a.score,
-  )
+  const filtered = region === 'overall' ? sites : sites.filter((s) => s.id === region)
+  // Copy before sorting — `sites` is the shared sample array; sorting in place
+  // would mutate it. Rank highest-first on the chosen key.
+  const visible = [...filtered].sort((a, b) => sortValue(b, sort) - sortValue(a, sort))
 
   return (
     <Sidebar
@@ -85,6 +105,24 @@ export default function RiskPanel() {
           {habitatRiskSites.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="mb-3 block">
+        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-secondary">
+          Sort by · highest first
+        </span>
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value as SortKey)}
+          aria-label="Sort sites by"
+          className="w-full rounded-pill border border-brd bg-card px-3 py-1.5 text-sm text-ink"
+        >
+          {SORT_OPTIONS.map((o) => (
+            <option key={o.key} value={o.key}>
+              {o.label}
             </option>
           ))}
         </select>
