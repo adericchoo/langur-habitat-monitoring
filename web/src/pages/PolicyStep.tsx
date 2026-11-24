@@ -1,55 +1,28 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import Sidebar from '../components/Sidebar'
-import PolicyBox from '../components/PolicyBox'
+import PolicyOptionCard from '../components/PolicyOptionCard'
 import { usePins } from '../report/pins'
-import { habitatLossSites } from '../samples/habitatLoss'
-import { policyBank, type PolicyDriver } from '../samples/policyBank'
+import { ACTION_LABEL, GRADE, TIER_LABEL, policyDashboard } from '../results/policyDashboard'
+import type { PolicySite } from '../types/policy'
 
-// Loss-driver metric (from the habitat-loss step) → policy-bank driver tag.
-const DRIVER_METRIC: Record<string, PolicyDriver> = {
-  driver_mining: 'mining',
-  driver_farming: 'farming',
-  driver_other: 'other',
-}
-const DRIVER_LABEL: Record<PolicyDriver, string> = {
-  mining: 'Mining',
-  farming: 'Farming',
-  other: 'Other',
-}
+const { sites, run, not_briefed: notBriefed } = policyDashboard
 
-// A driver counts as "detected" if its share is above this. 0 = present-means-
-// detected; what really counts as a driver is a domain call (SVW), not a UI one,
-// so this stays 0 and is the single knob to change if a threshold is adopted.
-const MIN_SHARE = 0
-
-/** Step 04 — Policy matcher. Reads the selected site's loss drivers and maps each
- *  detected driver (share-ranked) to its interventions in the bank. G2 adds the
- *  matching on top of G1's catalogue. Pins local for now; H1 lifts them, and the
- *  per-step site selection becomes shared state then too. */
+/** Step 04 — Policy. Reads the policy bank's compact summary of the real run:
+ *  the sites with the highest-priority patches, each with the few options the
+ *  plain-English overview names. The full reasoning, every condition and every
+ *  source live in the per-site briefs; this step is the short version. */
 export default function PolicyStep() {
-  const [siteId, setSiteId] = useState(habitatLossSites[0].id)
+  const [siteId, setSiteId] = useState(sites[0].site_id)
+  const [showSummary, setShowSummary] = useState(false)
   const { isPinned, toggle, count } = usePins()
 
-  const site = habitatLossSites.find((s) => s.id === siteId) ?? habitatLossSites[0]
-
-  // Detected drivers for this site: present (> MIN_SHARE), strongest first.
-  const detected = useMemo(
-    () =>
-      Object.entries(DRIVER_METRIC)
-        .map(([metric, driver]) => ({
-          driver,
-          share: site.metrics.find((m) => m.metric === metric)?.value ?? 0,
-        }))
-        .filter((d) => d.share > MIN_SHARE)
-        .sort((a, b) => b.share - a.share),
-    [site],
-  )
+  const site = sites.find((s) => s.site_id === siteId) ?? sites[0]
 
   return (
     <Sidebar
-      eyebrow="Northern Vietnam · Kim Bang"
+      eyebrow={`Northern Vietnam · ${site.site_name}`}
       title="Policy"
-      subtitle="interventions matched to detected drivers · sample bank"
+      subtitle={`options for the highest-priority sites · ${policyDashboard.run_year} run`}
       headerAction={
         <span className="rounded-pill bg-teal-tint px-2.5 py-0.5 text-xs font-semibold text-teal">
           Report · {count} pinned
@@ -58,62 +31,100 @@ export default function PolicyStep() {
     >
       <label className="mb-3 block">
         <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-secondary">
-          Site
+          Site · {sites.length} of {run.sites} briefed
         </span>
         <select
           value={siteId}
-          onChange={(e) => setSiteId(e.target.value)}
+          onChange={(e) => {
+            setSiteId(e.target.value)
+            setShowSummary(false)
+          }}
           className="w-full rounded-pill border border-brd bg-card px-3 py-1.5 text-sm text-ink"
         >
-          {habitatLossSites.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
+          {sites.map((s) => (
+            <option key={s.site_id} value={s.site_id}>
+              {s.site_name} · {s.top_tier} · {s.top_priority}
             </option>
           ))}
         </select>
       </label>
 
-      <div className="space-y-5">
-        {detected.map(({ driver, share }) => {
-          const items = policyBank.filter((p) => p.driver === driver)
-          if (items.length === 0) return null
+      <SiteHeadline site={site} />
+
+      <button
+        type="button"
+        onClick={() => setShowSummary((v) => !v)}
+        aria-expanded={showSummary}
+        className="mt-2 flex items-center gap-1 rounded-md text-xs font-semibold text-navy hover:text-teal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal"
+      >
+        <span
+          aria-hidden="true"
+          className={`inline-block text-secondary transition-transform ${showSummary ? 'rotate-90' : ''}`}
+        >
+          ▸
+        </span>
+        Read the summary
+      </button>
+      {showSummary ? <p className="mt-2 text-sm leading-relaxed text-ink">{site.summary}</p> : null}
+
+      <h2 className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wide text-secondary">
+        Options to raise · {site.options.length}
+      </h2>
+      <div className="space-y-3">
+        {site.options.map((option) => {
+          const id = `policy:${option.id}`
           return (
-            <section key={driver} className="space-y-3">
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-secondary">
-                {DRIVER_LABEL[driver]} · {share}% of suspected loss
-              </h2>
-              {items.map((policy) => {
-                const id = `policy:${policy.id}`
-                return (
-                  <PolicyBox
-                    key={policy.id}
-                    name={policy.name}
-                    country={policy.country}
-                    description={policy.description}
-                    source={policy.source}
-                    howItFits={policy.howItFits}
-                    limitations={policy.limitations}
-                    pinned={isPinned(id)}
-                    onTogglePin={() =>
-                      toggle({
-                        id,
-                        step: 'policy',
-                        label: policy.name,
-                        detail: policy.country,
-                      })
-                    }
-                  />
-                )
-              })}
-            </section>
+            <PolicyOptionCard
+              key={option.id}
+              option={option}
+              pinned={isPinned(id)}
+              onTogglePin={() =>
+                toggle({
+                  id,
+                  step: 'policy',
+                  label: option.name,
+                  detail: `${site.site_name} · ${GRADE[option.grade].chip}`,
+                })
+              }
+            />
           )
         })}
       </div>
 
-      <p className="mt-4 text-xs text-secondary">
-        Pinned interventions carry into Step 05 · Report. Matched to screening
-        drivers; illustrative sample bank — to be curated with SVW / legal input.
-      </p>
+      <div className="mt-5 space-y-2 border-t border-brd pt-3 text-xs text-secondary">
+        <p>
+          Every condition and source is in the full brief ({site.brief}). Not briefed this run:{' '}
+          {notBriefed.sites.join(', ')} ({notBriefed.patches} patches).
+        </p>
+        <p>{policyDashboard.caveat}</p>
+      </div>
     </Sidebar>
+  )
+}
+
+/** Navy headline card: the site's patch count, area, tiers and triage action. */
+function SiteHeadline({ site }: { site: PolicySite }) {
+  const tiers = Object.entries(site.patches.by_tier)
+    .map(([tier, n]) => `${n} ${tier}`)
+    .join(' · ')
+  return (
+    <div className="rounded-card bg-navy p-4 font-sans">
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-teal">
+          {TIER_LABEL[site.top_tier] ?? site.top_tier} · priority {site.top_priority}
+        </p>
+        <span className="shrink-0 rounded-pill bg-card px-2.5 py-0.5 text-xs font-semibold text-navy">
+          {ACTION_LABEL[site.action]}
+        </span>
+      </div>
+      <p className="mt-1 text-2xl font-bold leading-tight text-card">
+        {site.patches.count}
+        <span className="ml-1.5 text-base font-semibold">{site.patch_noun}</span>
+      </p>
+      <p className="mt-1 text-xs text-teal-tint">
+        {site.patches.area_ha !== null ? `${site.patches.area_ha} ha · ` : ''}
+        {tiers}
+      </p>
+    </div>
   )
 }

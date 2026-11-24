@@ -392,6 +392,38 @@ def test_the_overview_says_the_same_thing_twice(scored, tmp_path):
     assert (tmp_path / "a" / "overview.md").read_bytes() == (tmp_path / "b" / "overview.md").read_bytes()
 
 
+# --- the compact dashboard file ---------------------------------------------
+
+def test_the_dashboard_file_is_a_compact_copy_of_the_briefs(scored, tmp_path, bank, cfg):
+    payload = pb.run(scored, SAMPLE, tmp_path / "out")
+    dash = json.loads((tmp_path / "out" / "policy-dashboard.json").read_text(encoding="utf-8"))
+    assert dash["schema"] == "policy-dashboard/v1"
+    assert [s["site_id"] for s in dash["sites"]] == [b["site_id"] for b in payload["briefs"]]
+    sources = {c["id"]: c["sources"][0] for c in bank["cases"]}
+    for site, brief in zip(dash["sites"], payload["briefs"]):
+        assert site["patches"]["count"] == brief["patches"]["count"]
+        assert site["options"] and len({o["id"] for o in site["options"]}) == len(site["options"])
+        matched = {(o["case_id"], o["grade"]) for g in brief["groups"] for o in g["options"]}
+        for o in site["options"]:
+            assert (o["case_id"], o["grade"]) in matched       # nothing the briefs don't say
+            assert o["case_id"] not in o["name"] + o["does"] + o["next_step"]
+            assert o["next_step"]
+            assert o["source"]["url"] == sources[o["case_id"]]["url"]
+            assert o["source"]["quote"] == sources[o["case_id"]]["quote"]
+            assert 0 < o["patch_count"] <= site["patches"]["count"]
+        assert "**" not in site["summary"] and "](" not in site["summary"]
+
+
+def test_an_option_shared_by_two_groups_is_listed_once(scored, tmp_path):
+    payload = pb.run(scored, SAMPLE, tmp_path / "out")
+    dash = json.loads((tmp_path / "out" / "policy-dashboard.json").read_text(encoding="utf-8"))
+    kim = next(s for s in dash["sites"] if s["site_name"] == "Kim Bang")   # outside + buffer
+    brief = next(b for b in payload["briefs"] if b["site_name"] == "Kim Bang")
+    per = brief["groups"][0]["options"][0]
+    shared = [o for o in kim["options"] if o["case_id"] == per["case_id"] and o["grade"] == per["grade"]]
+    assert len(shared) == 1
+
+
 def _edit_first_row(scored, tmp_path, **changes):
     rows = list(csv.DictReader(open(scored)))
     rows[0].update(changes)

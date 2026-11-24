@@ -159,6 +159,13 @@ reviewed):
   source. The terminal prints the same text without links; `--ids` prints the
   hotspot and case id table instead.
 - `briefs/<site_id>.md`: one brief per selected site.
+- `policy-dashboard.json`: a compact copy for the dashboard's Policy step
+  (`dashboard.py`, schema `policy-dashboard/v1`). Per briefed site it holds the
+  headline numbers and the same few options the overview names, each with its
+  grade, one next step, the patches it covers and its main source with the
+  quote. It writes no new text: every string is copied from the briefs. The
+  dashboard reads a committed copy at `web/src/results/policy-dashboard-2025.json`;
+  to update it, copy a new run's file over that one.
 - `policy-briefs.json`: the same content for the dashboard. Each option carries
   `name`, `country`, `description`, `howItFits`, `limitations` and `sources`,
   the fields the policy step's sample bank (`web/src/samples/policyBank.ts`)

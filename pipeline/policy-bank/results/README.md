@@ -24,5 +24,8 @@ resolve to locations through the scorer's outputs, which never enter git.
 site, and `briefs[].groups[].options[].sources[]` carries each source's
 `locator` and `quote`.
 
+The dashboard's Policy step reads the compact version of the same run,
+`web/src/results/policy-dashboard-2025.json`.
+
 To regenerate, run the scorer and then the policy bank on the same build (see
 `../README.md`); the same inputs give a byte-identical file.

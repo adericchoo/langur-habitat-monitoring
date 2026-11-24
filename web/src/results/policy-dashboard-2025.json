@@ -1,0 +1,301 @@
+{
+  "schema": "policy-dashboard/v1",
+  "run_year": "2025",
+  "caveat": "Screening output. Each flagged patch is a suspected land-cover change from satellite classification, and the options are matched from a curated case bank by fixed rules. Save Vietnam's Wildlife reviews every brief before it is used.",
+  "bank_version": "0.5",
+  "run": {
+    "patches": 183,
+    "sites": 7,
+    "by_tier": {
+      "P1": 2,
+      "P2": 31,
+      "P3": 150
+    }
+  },
+  "sites": [
+    {
+      "site_id": "tam-diep-forest-nb",
+      "site_name": "Tam Diep",
+      "action": "act",
+      "brief_type": "Escalation brief",
+      "top_priority": 64.7,
+      "top_tier": "P1",
+      "patch_noun": "suspected quarry patches",
+      "patches": {
+        "count": 42,
+        "area_ha": 154.9,
+        "by_tier": {
+          "P1": 1,
+          "P2": 10,
+          "P3": 31
+        }
+      },
+      "summary": "Tam Diep has 42 suspected quarry patches, 154.9 ha in total; one of them is in the top priority tier. The restoration deposit for quarries (Decree 08/2022) would make the operator pay to restore the cleared site; before raising it, confirm that the quarry holds a licence, so a deposit and a remediation plan exist; and that the deposit is large enough to pay for restoring karst forest. A conservation-area designation like Kim Bang's would put the forest under a conservation management board; before raising it, confirm that the provincial People's Committee is willing to designate and that conservation organisations sustain the case over several years. India's fixed no-mining buffer around protected areas would ban mining within a set distance of the protected area, but it needs groundwork first: the condition \"the patch is within a defined buffer of a protected-area boundary\" is not met here.",
+      "options": [
+        {
+          "id": "tam-diep-forest-nb:VN-REMEDIATION-DEPOSIT",
+          "case_id": "VN-REMEDIATION-DEPOSIT",
+          "kind": "instrument",
+          "country": "Vietnam",
+          "name": "The restoration deposit for quarries (Decree 08/2022)",
+          "does": "Would make the operator pay to restore the cleared site.",
+          "grade": "confirm",
+          "next_step": "The quarry holds a licence, so a deposit and a remediation plan exist",
+          "more_conditions": 1,
+          "patch_count": 42,
+          "applies_to": "All 42 patches",
+          "source": {
+            "title": "Winrock International: Law on Environmental Protection 2020 and Decree 08/2022/ND-CP, English translation (PDF)",
+            "url": "https://winrock.org/wp-content/uploads/2023/02/LuatBVMT-Eng_20230203.pdf",
+            "locator": "Decree 08/2022/ND-CP, Article 37(1)",
+            "quote": "provides adequate funding for environmental remediation and improvement",
+            "checked": "passage"
+          },
+          "reviewed_by_svw": false
+        },
+        {
+          "id": "tam-diep-forest-nb:VN-KIMBANG-DESIGNATION",
+          "case_id": "VN-KIMBANG-DESIGNATION",
+          "kind": "precedent",
+          "country": "Vietnam",
+          "name": "A conservation-area designation like Kim Bang's",
+          "does": "Would put the forest under a conservation management board.",
+          "grade": "confirm",
+          "next_step": "The provincial People's Committee is willing to designate",
+          "more_conditions": 1,
+          "patch_count": 42,
+          "applies_to": "All 42 patches",
+          "source": {
+            "title": "VietnamPlus: Ninh Binh establishes world's largest Delacour's langur sanctuary (6 Nov 2026)",
+            "url": "https://en.vietnamplus.vn/ninh-binh-establishes-worlds-largest-delacours-langur-sanctuary-post354875.vnp",
+            "locator": "news article",
+            "quote": "the conservation area covers 3,182ha, including over 3,016ha of natural limestone forest",
+            "checked": "full_text"
+          },
+          "reviewed_by_svw": false
+        },
+        {
+          "id": "tam-diep-forest-nb:IN-MINING-BUFFER-2023",
+          "case_id": "IN-MINING-BUFFER-2023",
+          "kind": "precedent",
+          "country": "India",
+          "name": "India's fixed no-mining buffer around protected areas",
+          "does": "Would ban mining within a set distance of the protected area.",
+          "grade": "groundwork",
+          "next_step": "The patch is within a defined buffer of a protected-area boundary",
+          "more_conditions": 0,
+          "patch_count": 42,
+          "applies_to": "All 42 patches",
+          "source": {
+            "title": "Supreme Court of India: In re T.N. Godavarman Thirumulpad v. Union of India, order of 28 April 2023 (PDF)",
+            "url": "https://main.sci.gov.in/supremecourt/1995/2997/2997_1995_8_55_44035_Judgement_28-Apr-2023.pdf",
+            "locator": "order of 28 April 2023, quoting paragraph 65 of the judgment of 26 April 2023",
+            "quote": "within an area of one kilometre from the boundary of such National Park",
+            "checked": "passage"
+          },
+          "reviewed_by_svw": false
+        }
+      ],
+      "brief": "briefs/tam-diep-forest-nb.md"
+    },
+    {
+      "site_id": "kim-bang",
+      "site_name": "Kim Bang",
+      "action": "act",
+      "brief_type": "Escalation brief",
+      "top_priority": 60.3,
+      "top_tier": "P1",
+      "patch_noun": "suspected quarry patches",
+      "patches": {
+        "count": 27,
+        "area_ha": 372.7,
+        "by_tier": {
+          "P1": 1,
+          "P2": 8,
+          "P3": 18
+        }
+      },
+      "summary": "Kim Bang has 27 suspected quarry patches, 372.7 ha in total; one of them is in the top priority tier. Kim Bang's conservation-area designation (November 2026) is already in place here, so the first step is to check whether the flagged patches fall inside the new boundary, which the data behind this run predates. The restoration deposit for quarries (Decree 08/2022) would make the operator pay to restore the cleared site; before raising it, confirm that the quarry holds a licence, so a deposit and a remediation plan exist; and that the deposit is large enough to pay for restoring karst forest. India's fixed no-mining buffer around protected areas would ban mining within a set distance of the protected area, but it needs groundwork first: the condition \"the patch is within a defined buffer of a protected-area boundary\" is not met here.",
+      "options": [
+        {
+          "id": "kim-bang:VN-KIMBANG-DESIGNATION",
+          "case_id": "VN-KIMBANG-DESIGNATION",
+          "kind": "precedent",
+          "country": "Vietnam",
+          "name": "Kim Bang's conservation-area designation (November 2026)",
+          "does": "Already in place at this site.",
+          "grade": "in_place",
+          "next_step": "The first step is to check whether the flagged patches fall inside the new boundary, which the data behind this run predates",
+          "more_conditions": 0,
+          "patch_count": 27,
+          "applies_to": "All 27 patches",
+          "source": {
+            "title": "VietnamPlus: Ninh Binh establishes world's largest Delacour's langur sanctuary (6 Nov 2026)",
+            "url": "https://en.vietnamplus.vn/ninh-binh-establishes-worlds-largest-delacours-langur-sanctuary-post354875.vnp",
+            "locator": "news article",
+            "quote": "the conservation area covers 3,182ha, including over 3,016ha of natural limestone forest",
+            "checked": "full_text"
+          },
+          "reviewed_by_svw": false
+        },
+        {
+          "id": "kim-bang:VN-REMEDIATION-DEPOSIT",
+          "case_id": "VN-REMEDIATION-DEPOSIT",
+          "kind": "instrument",
+          "country": "Vietnam",
+          "name": "The restoration deposit for quarries (Decree 08/2022)",
+          "does": "Would make the operator pay to restore the cleared site.",
+          "grade": "confirm",
+          "next_step": "The quarry holds a licence, so a deposit and a remediation plan exist",
+          "more_conditions": 1,
+          "patch_count": 27,
+          "applies_to": "All 27 patches",
+          "source": {
+            "title": "Winrock International: Law on Environmental Protection 2020 and Decree 08/2022/ND-CP, English translation (PDF)",
+            "url": "https://winrock.org/wp-content/uploads/2023/02/LuatBVMT-Eng_20230203.pdf",
+            "locator": "Decree 08/2022/ND-CP, Article 37(1)",
+            "quote": "provides adequate funding for environmental remediation and improvement",
+            "checked": "passage"
+          },
+          "reviewed_by_svw": false
+        },
+        {
+          "id": "kim-bang:IN-MINING-BUFFER-2023",
+          "case_id": "IN-MINING-BUFFER-2023",
+          "kind": "precedent",
+          "country": "India",
+          "name": "India's fixed no-mining buffer around protected areas",
+          "does": "Would ban mining within a set distance of the protected area.",
+          "grade": "groundwork",
+          "next_step": "The patch is within a defined buffer of a protected-area boundary",
+          "more_conditions": 0,
+          "patch_count": 27,
+          "applies_to": "All 27 patches",
+          "source": {
+            "title": "Supreme Court of India: In re T.N. Godavarman Thirumulpad v. Union of India, order of 28 April 2023 (PDF)",
+            "url": "https://main.sci.gov.in/supremecourt/1995/2997/2997_1995_8_55_44035_Judgement_28-Apr-2023.pdf",
+            "locator": "order of 28 April 2023, quoting paragraph 65 of the judgment of 26 April 2023",
+            "quote": "within an area of one kilometre from the boundary of such National Park",
+            "checked": "passage"
+          },
+          "reviewed_by_svw": false
+        }
+      ],
+      "brief": "briefs/kim-bang.md"
+    },
+    {
+      "site_id": "van-long-dong-tam",
+      "site_name": "Van Long - Dong Tam",
+      "action": "watch",
+      "brief_type": "Monitoring brief",
+      "top_priority": 57.0,
+      "top_tier": "P2",
+      "patch_noun": "suspected quarry patches",
+      "patches": {
+        "count": 33,
+        "area_ha": 55.0,
+        "by_tier": {
+          "P2": 7,
+          "P3": 26
+        }
+      },
+      "summary": "Van Long - Dong Tam has 33 suspected quarry patches, 55.0 ha in total; the highest-ranked is in the middle priority tier. Of these, 3 lie inside a protected area (Nature Reserve), 10 in a protected-area buffer zone and 20 outside any protected area, and the options differ between them. For the 3 patches inside a protected area (Nature Reserve): Van Long's community-backed reserve management is already in place here, so the question is whether it is working: ask the reserve's management board whether it knew of the clearing and what enforcement followed. The Minerals Law's ban on mining in special-use and protective forest would make quarrying here a breach of an existing prohibition; before raising it, confirm that the province's land records classify this land as special-use or protective forest. For the 10 patches in a protected-area buffer zone: Van Long's community-backed reserve management covers these patches too. The restoration deposit for quarries (Decree 08/2022) would make the operator pay to restore the cleared site; before raising it, confirm that the quarry holds a licence, so a deposit and a remediation plan exist; and that the deposit is large enough to pay for restoring karst forest. For the 20 patches outside any protected area: The restoration deposit for quarries (Decree 08/2022) applies to these patches too, on the same conditions. A conservation-area designation like Kim Bang's would put the forest under a conservation management board; before raising it, confirm that the provincial People's Committee is willing to designate and that conservation organisations sustain the case over several years.",
+      "options": [
+        {
+          "id": "van-long-dong-tam:VN-VANLONG-COMMUNITY",
+          "case_id": "VN-VANLONG-COMMUNITY",
+          "kind": "precedent",
+          "country": "Vietnam",
+          "name": "Van Long's community-backed reserve management",
+          "does": "Already in place at this site.",
+          "grade": "in_place",
+          "next_step": "The question is whether it is working: ask the reserve's management board whether it knew of the clearing and what enforcement followed",
+          "more_conditions": 0,
+          "patch_count": 13,
+          "applies_to": "3 patches inside a protected area (Nature Reserve) and 10 in a protected-area buffer zone",
+          "source": {
+            "title": "PANORAMA Solutions: Conservation of Delacour's Langur in Van Long Wetland Nature Reserve, Vietnam",
+            "url": "https://panorama.solutions/fr/node/5880",
+            "locator": "case-study page",
+            "quote": "Recent counts confirmed c. 150-160 individuals of this langur",
+            "checked": "full_text"
+          },
+          "reviewed_by_svw": false
+        },
+        {
+          "id": "van-long-dong-tam:VN-MINERALS-2024",
+          "case_id": "VN-MINERALS-2024",
+          "kind": "instrument",
+          "country": "Vietnam",
+          "name": "The Minerals Law's ban on mining in special-use and protective forest",
+          "does": "Would make quarrying here a breach of an existing prohibition.",
+          "grade": "confirm",
+          "next_step": "The province's land records classify this land as special-use or protective forest",
+          "more_conditions": 0,
+          "patch_count": 3,
+          "applies_to": "3 patches inside a protected area (Nature Reserve)",
+          "source": {
+            "title": "Apolat Legal: Law on Geology and Minerals No. 54/2024/QH15, English translation (PDF)",
+            "url": "https://apolatlegal.com/wp-content/uploads/2025/07/LAW-GEOLOGY-AND-MINERALS.pdf",
+            "locator": "Article 26(1)(c)",
+            "quote": "Special-use forest, protective forest; geological sanctuaries, marine sanctuaries as per the law",
+            "checked": "passage"
+          },
+          "reviewed_by_svw": false
+        },
+        {
+          "id": "van-long-dong-tam:VN-REMEDIATION-DEPOSIT",
+          "case_id": "VN-REMEDIATION-DEPOSIT",
+          "kind": "instrument",
+          "country": "Vietnam",
+          "name": "The restoration deposit for quarries (Decree 08/2022)",
+          "does": "Would make the operator pay to restore the cleared site.",
+          "grade": "confirm",
+          "next_step": "The quarry holds a licence, so a deposit and a remediation plan exist",
+          "more_conditions": 1,
+          "patch_count": 30,
+          "applies_to": "10 patches in a protected-area buffer zone and 20 outside any protected area",
+          "source": {
+            "title": "Winrock International: Law on Environmental Protection 2020 and Decree 08/2022/ND-CP, English translation (PDF)",
+            "url": "https://winrock.org/wp-content/uploads/2023/02/LuatBVMT-Eng_20230203.pdf",
+            "locator": "Decree 08/2022/ND-CP, Article 37(1)",
+            "quote": "provides adequate funding for environmental remediation and improvement",
+            "checked": "passage"
+          },
+          "reviewed_by_svw": false
+        },
+        {
+          "id": "van-long-dong-tam:VN-KIMBANG-DESIGNATION",
+          "case_id": "VN-KIMBANG-DESIGNATION",
+          "kind": "precedent",
+          "country": "Vietnam",
+          "name": "A conservation-area designation like Kim Bang's",
+          "does": "Would put the forest under a conservation management board.",
+          "grade": "confirm",
+          "next_step": "The provincial People's Committee is willing to designate",
+          "more_conditions": 1,
+          "patch_count": 20,
+          "applies_to": "20 patches outside any protected area",
+          "source": {
+            "title": "VietnamPlus: Ninh Binh establishes world's largest Delacour's langur sanctuary (6 Nov 2026)",
+            "url": "https://en.vietnamplus.vn/ninh-binh-establishes-worlds-largest-delacours-langur-sanctuary-post354875.vnp",
+            "locator": "news article",
+            "quote": "the conservation area covers 3,182ha, including over 3,016ha of natural limestone forest",
+            "checked": "full_text"
+          },
+          "reviewed_by_svw": false
+        }
+      ],
+      "brief": "briefs/van-long-dong-tam.md"
+    }
+  ],
+  "not_briefed": {
+    "patches": 81,
+    "sites": [
+      "Cuc Phuong",
+      "Hoa Lu / Trang An",
+      "Huong Son - Lac Thuy",
+      "Pu Luong"
+    ]
+  }
+}
