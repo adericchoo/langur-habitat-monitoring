@@ -18,34 +18,53 @@
 #                  in place. There it is graded "in place" and the brief uses
 #                  at_home_site instead of fit_note and the preconditions.
 #   at_home_site   Required with home_sites: what to check at the home site.
+#   plain_name     The case as a short noun phrase, for the plain-English overview.
+#   plain_use      What raising it would do, as a clause after plain_name
+#                  ("... would make the operator pay to restore the cleared site").
+#   plain_home_name, plain_home_check
+#                  Required with home_sites: the overview's wording there.
 #   preconditions  What has to be true for the case to work at this hotspot.
 #                  `check` tests a hotspot attribute; `status` is the curator's
 #                  reading for Vietnam (met | partial | not_met | unknown).
 #   outcome        in_force | positive | mixed | unmeasured
-#   sources        `checked: full_text` means the page itself was read;
-#                  `checked: search_excerpt` means only the search excerpt was
-#                  read and the article text still wants checking.
+#   sources        Numbered in the order listed. The first source is the case's
+#                  main source: the policy text itself where one was found in
+#                  English. The overview links the case's name to it.
+#                  title, url
+#                  locator   Where in the source the quote sits (article and
+#                            clause for a law, page or section otherwise).
+#                  quote     Verbatim English from the source, under 15 words.
+#                  checked   full_text: the whole source was read.
+#                            passage: the passage around the quote was read in
+#                            the source itself (a law's article, an abstract).
+#                            search_excerpt: only a search-engine excerpt was
+#                            read. Such a source may not carry a quote and is
+#                            flagged in the brief.
+#   [n] markers    In summary, evidence, limitations and precondition notes,
+#                  [n] cites source n. Every claim in `evidence` carries one,
+#                  every marker must resolve, and every source must be cited;
+#                  a test enforces all three.
 #   reviewed_by_svw  false until Save Vietnam's Wildlife has signed the entry off.
 #
-# Every figure in `evidence` comes from the listed sources. Sources were
-# accessed on 2026-11-19.
+# Sources were read between 2026-11-19 and 2026-11-23. Quotes are kept short
+# and the bank stores no full texts, so it can sit in a public repository.
 
-bank_version: "0.3"
+bank_version: "0.5"
 
 cases:
   - id: VN-MINERALS-2024
     kind: instrument
     jurisdiction: Vietnam
-    name: Areas prohibited from mineral activities (Law on Geology and Minerals 2024)
+    name: Sites where mining is prohibited (Law on Geology and Minerals 2024, Article 26)
+    plain_name: "the Minerals Law's ban on mining in special-use and protective forest"
+    plain_use: "would make quarrying here a breach of an existing prohibition"
     summary: >
-      The law lets the State delineate areas where mineral activities are
-      prohibited. Special-use forest land and protection forest land are among
-      the grounds for prohibition.
+      Article 26 of the law names the sites where mining operations are
+      prohibited. Special-use forest and protective forest are among them [1].
     evidence: >
-      Law No. 54/2024/QH15 was passed on 29 November 2024 and took effect on
-      1 July 2025, replacing the 2010 Mineral Law. Article 26 lists special-use
-      forest land and protection forest land among the areas where mineral
-      activities are prohibited.
+      Law No. 54/2024/QH15 took effect on 1 July 2025 [2]. Article 26(1)(c)
+      lists special-use forest and protective forest among the sites where
+      mining operations are prohibited [1].
     outcome: in_force
     applies_when:
       driver: [mining]
@@ -61,42 +80,47 @@ cases:
         prohibited, and the request to the province is to enforce an existing
         prohibition.
     preconditions:
-      - text: The patch is on land classified as special-use or protection forest
+      - text: The patch is on land classified as special-use or protective forest
         check: {field: g_protected, in: [inside]}
-      - text: The province's delineated list of prohibited areas includes this land
+      - text: The province's land records classify this land as special-use or protective forest
         status: unknown
-        note: The delineation is a provincial planning document; ask the provincial Department of Agriculture and Environment for the current map.
+        note: The forest classification of each patch has to come from the provincial Department of Agriculture and Environment.
     limitations: >
-      Licensing for construction-material minerals is delegated to the
-      provincial People's Committee chair, so the body that licenses quarries
-      is also the body asked to enforce the prohibition.
+      The prohibition turns on how the land is classified. Forest land that has
+      been reclassified for mining falls outside it, and the law text alone
+      does not show which patches that applies to.
     sources:
-      - title: "LawNet: Which areas are prohibited from mineral activities in Vietnam? (Article 26)"
-        url: https://lawnet.vn/ngan-hang-phap-luat/en/tu-van-phap-luat/tai-nguyen--moi-truong/what-is-the-significance-of-january-8-which-areas-are-prohibited-from-mineral-activities-in-vietnam-1102286
-        checked: search_excerpt
-      - title: "IEA policy database: Law on Geology and Mineral Resources"
-        url: https://www.iea.org/policies/18083-law-on-geology-and-mineral-resources
-        checked: search_excerpt
-      - title: "Vietnam Hoi Nhap: The Law on Geology and Minerals, the role of law enforcement organisation"
-        url: https://vietnamhoinhap.vn/en/the-law-on-geology-and-minerals-the-critical-role-of-law-enforcement-organization-56613.htm
-        checked: search_excerpt
+      - title: "Apolat Legal: Law on Geology and Minerals No. 54/2024/QH15, English translation (PDF)"
+        url: https://apolatlegal.com/wp-content/uploads/2025/07/LAW-GEOLOGY-AND-MINERALS.pdf
+        locator: "Article 26(1)(c)"
+        quote: "Special-use forest, protective forest; geological sanctuaries, marine sanctuaries as per the law"
+        checked: passage
+      - title: "Ministry of Industry and Trade: Completing the legal framework for mineral extraction activities"
+        url: https://moit.gov.vn/en/news/completing-the-legal-framework-for-mineral-extraction-activities.html
+        locator: "news item"
+        quote: "54/2024/QH15, which took effect on July 1, 2025"
+        checked: full_text
     reviewed_by_svw: false
 
   - id: VN-REMEDIATION-DEPOSIT
     kind: instrument
     jurisdiction: Vietnam
-    name: Environmental remediation deposit for mineral extraction (Decree 08/2022/ND-CP)
+    name: Environmental remediation deposit for mineral extraction (Decree 08/2022/ND-CP, Article 37)
+    plain_name: "the restoration deposit for quarries (Decree 08/2022)"
+    plain_use: "would make the operator pay to restore the cleared site"
     summary: >
-      A licensed mineral operation pays a deposit toward restoring the site.
-      If the operator does not restore it, the authority that approves the mine
-      closure plan can use the deposit to do the work.
+      A mineral operation pays a deposit so that environmental remediation of
+      the site is funded. If the operator is dissolved or goes bankrupt, the
+      authority that approved the mine closure plan uses the deposit to do the
+      work [1].
     evidence: >
-      The Law on Environmental Protection (No. 72/2020/QH14) took effect on
-      1 January 2022. Article 37 of Decree 08/2022/ND-CP sets the deposit for
-      environmental remediation in mineral mining. In Ninh Binh, the quarry
-      projects ordered to stop by 31 December 2025 in the former Kim Bang area
-      were required to rehabilitate soil and restore the environment before
-      handing the land back.
+      Article 37 of Decree 08/2022/ND-CP governs paying and refunding the
+      deposit for environmental remediation during mineral mining; under clause
+      9 the deposit, with its interest, passes to the authority that approved
+      the mine closure plan if the operator is dissolved or bankrupt [1]. In
+      the former Kim Bang area, mineral projects in four localities were to end
+      operations by 31 December 2025 and carry out soil rehabilitation and
+      environmental restoration [2].
     outcome: in_force
     applies_when:
       driver: [mining]
@@ -120,41 +144,50 @@ cases:
         note: No source was found on deposit levels for limestone quarries in Ninh Binh.
     limitations: >
       The deposit pays for restoration after extraction. It does not stop the
-      clearing, and restored quarry floor is not karst forest.
+      clearing, and restored quarry floor is not karst forest. The English
+      translation predates later amendments to the Decree, so the current
+      wording of Article 37 needs checking [1].
     sources:
-      - title: "LawNet: Deposits on environmental remediation and improvement during mineral mining (Decree 08/2022/ND-CP, Article 37)"
-        url: https://lawnet.vn/thong-tin-phap-luat/en/tu-van-luat/5-things-you-should-know-about-deposits-on-environmental-remediation-and-improvement-during-mineral-mining-in-vietnam-116530.html
-        checked: search_excerpt
+      - title: "Winrock International: Law on Environmental Protection 2020 and Decree 08/2022/ND-CP, English translation (PDF)"
+        url: https://winrock.org/wp-content/uploads/2023/02/LuatBVMT-Eng_20230203.pdf
+        locator: "Decree 08/2022/ND-CP, Article 37(1)"
+        quote: "provides adequate funding for environmental remediation and improvement"
+        checked: passage
       - title: "Ninh Binh newspaper: Ninh Binh set to establish conservation area for endangered Delacour's langurs (8 Oct 2025)"
         url: https://en.baoninhbinh.org.vn/ninh-binh-set-to-establish-conservation-area-for-endangered-delacours-langurs-251008143543602.html
+        locator: "news article"
+        quote: "Those projects will also carry out soil rehabilitation and environmental restoration."
         checked: full_text
     reviewed_by_svw: false
 
   - id: VN-FORESTRY-2017
     kind: instrument
     jurisdiction: Vietnam
-    name: Special-use forest protection and conversion approval (Law on Forestry 2017)
+    name: Limits on repurposing natural forest (Law on Forestry 2017, Article 14)
+    plain_name: "the Forestry Law's limits on clearing natural forest"
+    plain_use: "would require the province to produce the approval for the clearing, or treat it as illegal"
     summary: >
-      Special-use forest carries the strongest protection of Vietnam's three
-      forest categories. Converting natural forest to another use needs
-      approval at National Assembly, Prime Minister or provincial level and has
-      to conform to the forestry master plan.
+      The law bars repurposing natural forest except for projects of national
+      importance, defence and security projects, and urgent projects that meet
+      Government criteria. It lists illegal felling, deforestation and
+      encroachment among prohibited acts [1].
     evidence: >
-      Law No. 16/2017/QH14 was passed on 15 November 2017 and took effect on
-      1 January 2019. It lists illegal felling, deforestation and encroachment
-      among prohibited acts. Decree 83/2020/ND-CP sets the criteria and
-      approval route for converting natural forest to another use.
+      Law No. 16/2017/QH14 came into force on 1 January 2019 (Article 107) [1].
+      Article 14(2) restricts repurposing natural forest to the project types
+      above, Article 9(1) prohibits illegally felling, deforesting, exploiting
+      or encroaching forests, and Article 20 gives provincial People's Councils
+      the decision on approving forest repurposing guidelines [1].
     outcome: in_force
     applies_when:
       g_protected: [inside]
     fit_note: >
-      Loss of forest inside a protected area is either an approved conversion
-      or a prohibited act. The request is for the province to say which, and
-      to produce the approval if there is one.
+      Loss of natural forest inside a protected area is either an approved
+      repurposing or a prohibited act. The request is for the province to say
+      which, and to produce the approval if there is one.
     fit_note_if_assumed:
       g_protected: >
         Whether the patch is inside a protected area is not yet known. If it
-        is, the loss of forest there is either an approved conversion or a
+        is, the loss of forest there is either an approved repurposing or a
         prohibited act, and the request is for the province to say which and
         to produce the approval if there is one.
     preconditions:
@@ -162,37 +195,44 @@ cases:
         check: {field: g_protected, in: [inside]}
       - text: The forest protection station has the rangers to follow up on the ground
         status: partial
-        note: A 2025 petition by Vietnamese conservation organisations reported four rangers at the Kim Bang-Thanh Liem Forest Protection Station.
+        note: A 2025 petition by five Vietnamese conservation organisations reported four rangers at the Kim Bang-Thanh Liem Forest Protection Station [2].
     limitations: >
-      The law sets the approval route; it does not by itself show whether a
-      given clearing was approved. Follow-up depends on ranger capacity.
+      The law sets the rules for repurposing; it does not by itself show
+      whether a given clearing was approved. Follow-up depends on ranger
+      capacity, which conservation organisations reported as thin at Kim Bang
+      [2].
     sources:
-      - title: "FAOLEX: Forestry Law No. 16/2017/QH14"
-        url: https://faolex.fao.org/en/documents/LEX-FAOC206322/forestry-law-no-16-2017-qh14-vnm-2017
-        checked: search_excerpt
-      - title: "LuatVietnam: Decree No. 83/2020/ND-CP amending Decree No. 156/2018/ND-CP"
-        url: https://english.luatvietnam.vn/decree-no-83-2020-nd-cp-dated-july-15-2020-of-the-government-amending-and-supplementing-a-number-of-articles-of-the-governments-decree-no-156-2018-186731-doc1.html
-        checked: search_excerpt
-      - title: "PanNature: Petition regarding the Species and Habitat Conservation Area for the Delacour's Langur in Kim Bang (2025)"
+      - title: "Luat Minh Khue: Law on Forestry No. 16/2017/QH14, consolidated English text"
+        url: https://luatminhkhue.vn/van-ban/tai-d33857.aspx
+        locator: "Article 14(2)"
+        quote: "Natural forests shall not be repurposed, except projects of national importance"
+        checked: passage
+      - title: "CCD, CEGORN, PanNature, GreenViet and WildAct: Petition on the Kim Bang Species and Habitat Conservation Area for the Delacour's Langur, English translation (1 Aug 2025)"
         url: https://www.nature.org.vn/en/wp-content/uploads/2025/08/Petition-Letter-RE-Kim-Bang-SCHA-2025-EN-Translation.pdf
-        checked: search_excerpt
+        locator: "page 1"
+        quote: "only four rangers currently work at the station"
+        checked: full_text
     reviewed_by_svw: false
 
   - id: VN-PFES
     kind: instrument
     jurisdiction: Vietnam
-    name: Payments for Forest Environmental Services (PFES)
+    name: Payments for Forest Environmental Services (Law on Forestry 2017, Articles 61-63)
+    plain_name: "payments for forest environmental services"
+    plain_use: "would pay local households to keep the forest standing"
     summary: >
-      Hydropower plants and water supply companies pay fees that are passed on
-      to the households and communities contracted to protect forest.
+      Users of forest environmental services, among them hydroelectric
+      producers and clean water suppliers, are required to pay for them, and
+      the payments go to those who protect the forest [1].
     evidence: >
-      PFES has contributed about 25% of annual investment in Vietnam's forestry
-      sector since 2008. A study in Cat Tien National Park reported that 81.4%
-      of poor participating households escaped poverty, by their own
-      definition, through forest protection income. A study in Son La found
-      the scheme's effect on forest cover is disputed and depends on whose data
-      is used, and that payments to individual villagers are small and not
-      continuous.
+      Article 63(2) of the Forestry Law names hydroelectric producers, clean
+      water suppliers and industrial producers among those required to pay
+      [1]. A study in Son La reports that PFES contributes 25% of total
+      investment in Vietnam's forestry sector, that its additionality is
+      disputed and depends on whose data is used, and that it adds little
+      income for individual villagers [2]. A study in Cat Tien National Park
+      reported that 81.4% of poor participating households escaped poverty, by
+      their own criteria, through forest protection income [3].
     outcome: mixed
     applies_when:
       driver: [farming]
@@ -200,37 +240,50 @@ cases:
       Where forest is being cleared for crops, a protection contract gives
       households an income for keeping it standing.
     preconditions:
-      - text: A paying service user (hydropower or water supply) draws on this forest
+      - text: A paying service user (hydropower, water supply or industry) draws on this forest
         status: unknown
-        note: PFES money comes from service users in the same watershed; whether the karst sites have one was not established.
+        note: The payers are users of the forest's services [1]; whether the karst sites have one was not established.
       - text: The forest is allocated to households or a community who can sign a contract
         status: unknown
     limitations: >
       Evidence that PFES adds forest cover beyond what would have happened
-      anyway is contested. Payments may not match what the cleared land earns
+      anyway is contested [2], and the Cat Tien study found weak monitoring and
+      unreliable data [3]. Payments may not match what the cleared land earns
       under crops.
     sources:
-      - title: "CIFOR-ICRAF: The politics of numbers and additionality governing the national PFES scheme in Vietnam, a case study from Son La (doi:10.24259/fs.v4i2.10891)"
-        url: https://www.cifor-icraf.org/knowledge/publication/7856
-        checked: full_text
-      - title: "CIFOR-ICRAF: Impacts of Payment for Forest Environmental Services in Cat Tien National Park"
-        url: https://cifor-icraf.org/knowledge/publication/8092
-        checked: search_excerpt
+      - title: "Luat Minh Khue: Law on Forestry No. 16/2017/QH14, consolidated English text"
+        url: https://luatminhkhue.vn/van-ban/tai-d33857.aspx
+        locator: "Article 63(2)"
+        quote: "The following entities are required to make payments for forest environmental services"
+        checked: passage
+      - title: "Pham et al. (2020) The politics of numbers and additionality governing the national PFES scheme in Vietnam: a case study from Son La province. Forest and Society 4(2): 379-404 (doi:10.24259/fs.v4i2.10891)"
+        url: https://scholarhub.unhas.ac.id/fs/vol4/iss2/1
+        locator: "abstract"
+        quote: "PFES has provided little additional income to individual villagers"
+        checked: passage
+      - title: "Pham et al. (2021) Impacts of Payment for Forest Environmental Services in Cat Tien National Park. Forests 12(7): 921 (doi:10.3390/f12070921)"
+        url: https://agris.fao.org/search/en/records/6723593eb605bda15e0a6b38
+        locator: "abstract"
+        quote: "81.4% have escaped poverty, based on self-defined poverty criteria"
+        checked: passage
     reviewed_by_svw: false
 
   - id: VN-VANLONG-COMMUNITY
     kind: precedent
     jurisdiction: Vietnam
     name: Community-backed reserve management at Van Long Nature Reserve
+    plain_name: "the community-backed reserve management model from Van Long"
+    plain_use: "would bring the surrounding communities into protecting the forest"
+    plain_home_name: "Van Long's community-backed reserve management"
+    plain_home_check: "the question is whether it is working: ask the reserve's management board whether it knew of the clearing and what enforcement followed"
     summary: >
-      Local communities asked for the reserve and take part in protecting it.
-      A multi-stakeholder management board set up in 2001 handles enforcement
-      and community engagement, and residents, former hunters among them,
-      patrol in community conservation teams.
+      The reserve's management board has the mandate to make decisions in the
+      reserve, and residents, some of them former hunters, take part in
+      protection through community conservation teams [1].
     evidence: >
       The reserve held 60-67 Delacour's langurs when it was established in
-      2001; recent counts are about 150-160. Van Long received IUCN Green List
-      certification in 2020.
+      2001; recent counts are about 150-160 [1]. Van Long received Green List
+      certification in 2020 [1].
     outcome: positive
     applies_when:
       g_protected: [inside, buffer]
@@ -255,16 +308,18 @@ cases:
         check: {field: g_protected, in: [inside]}
       - text: The surrounding communities support protection
         status: unknown
-        note: Community support at Van Long predates the reserve; it has to be established site by site.
+        note: Community support has to be established site by site.
       - text: Long-term funding from donors and government is in place
         status: unknown
     limitations: >
-      The gains at Van Long came mainly from stopping hunting. The same source
-      reports continuing smoke, dust and waste from nearby cement factories, so
-      the model has not been shown to hold back quarrying.
+      The same source reports that the reserve is affected by smoke, dust and
+      waste from the nearby Gian Khau Industrial Zone [1], so the model has not
+      been shown to hold back industrial pressure such as quarrying.
     sources:
       - title: "PANORAMA Solutions: Conservation of Delacour's Langur in Van Long Wetland Nature Reserve, Vietnam"
         url: https://panorama.solutions/fr/node/5880
+        locator: "case-study page"
+        quote: "Recent counts confirmed c. 150-160 individuals of this langur"
         checked: full_text
     reviewed_by_svw: false
 
@@ -272,18 +327,25 @@ cases:
     kind: precedent
     jurisdiction: Vietnam
     name: Designating unprotected langur habitat as a conservation area (Kim Bang)
+    plain_name: "a conservation-area designation like Kim Bang's"
+    plain_use: "would put the forest under a conservation management board"
+    plain_home_name: "Kim Bang's conservation-area designation (November 2026)"
+    plain_home_check: "the first step is to check whether the flagged patches fall inside the new boundary, which the data behind this run predates"
     summary: >
       Ninh Binh province established the Kim Bang Delacour's Langur Species and
-      Habitat Conservation Area over limestone forest that had no reserve
-      status, with strictly protected, ecological restoration and service
-      zones under the provincial forest management board.
+      Habitat Conservation Area, divided into strictly protected, ecological
+      restoration, and service and administrative zones, and assigned the
+      provincial Special-use and Protection Forest Management Board to manage
+      it [1].
     evidence: >
-      The decision was announced in November 2026. The area covers 3,182 ha,
-      including over 3,016 ha of natural limestone forest. Conservation
-      organisations had proposed it since 2016 and five of them petitioned the
-      Prime Minister in August 2025. Mining sites were excluded from the
-      boundary, and mineral projects in four localities of the former Kim Bang
-      area were ordered to end by 31 December 2025 and restore the land.
+      The decision was announced in November 2026; the area covers 3,182 ha,
+      including over 3,016 ha of natural limestone forest [1]. Conservation
+      organisations and government agencies had proposed it since 2016 [4],
+      and five organisations petitioned the Prime Minister, the Minister of
+      Agriculture and Environment and the provincial chair for it on 1 August
+      2025 [3]. Mining sites within the planned reserve were excluded, and
+      mineral projects in four localities of the former Kim Bang area were to
+      end operations by 31 December 2025 [2].
     outcome: positive
     applies_when:
       driver: [mining]
@@ -310,40 +372,55 @@ cases:
         check: {field: v_occupancy, in: [confirmed]}
       - text: The provincial People's Committee is willing to designate
         status: partial
-        note: Ninh Binh has now done this once. Four of the seven langur sites sit under the same province.
+        note: Ninh Binh has now done this once [1]. Four of the seven langur sites sit under the same province.
       - text: Conservation organisations sustain the case over several years
         status: partial
-        note: Kim Bang took about ten years from first proposal to decision.
+        note: Kim Bang took about ten years from first proposal to decision [4].
     limitations: >
-      Existing mining sites were drawn outside the boundary. Designation is
-      too recent for any effect on the langur population or the forest to have
-      been measured.
+      Mining sites within the planned reserve were excluded from it [2].
+      Designation is too recent for any effect on the langur population or the
+      forest to have been measured.
     sources:
-      - title: "VietnamPlus: Ninh Binh establishes world's largest Delacour's langur sanctuary (Nov 2026)"
+      - title: "VietnamPlus: Ninh Binh establishes world's largest Delacour's langur sanctuary (6 Nov 2026)"
         url: https://en.vietnamplus.vn/ninh-binh-establishes-worlds-largest-delacours-langur-sanctuary-post354875.vnp
+        locator: "news article"
+        quote: "the conservation area covers 3,182ha, including over 3,016ha of natural limestone forest"
         checked: full_text
       - title: "Ninh Binh newspaper: Ninh Binh set to establish conservation area for endangered Delacour's langurs (8 Oct 2025)"
         url: https://en.baoninhbinh.org.vn/ninh-binh-set-to-establish-conservation-area-for-endangered-delacours-langurs-251008143543602.html
+        locator: "news article"
+        quote: "mining sites within the planned reserve have been excluded"
         checked: full_text
-      - title: "PanNature: Joint petition calls for establishment of Species and Habitat Conservation Area for the Delacour's Langur in Kim Bang"
-        url: https://www.nature.org.vn/en/joint-petition-calls-for-establishment-of-species-and-habitat-conservation-area/
-        checked: search_excerpt
+      - title: "CCD, CEGORN, PanNature, GreenViet and WildAct: Petition on the Kim Bang Species and Habitat Conservation Area for the Delacour's Langur, English translation (1 Aug 2025)"
+        url: https://www.nature.org.vn/en/wp-content/uploads/2025/08/Petition-Letter-RE-Kim-Bang-SCHA-2025-EN-Translation.pdf
+        locator: "recommendation (1)"
+        quote: "Urgently establish the Kim Bang Species and Habitat Conservation Area"
+        checked: full_text
+      - title: "The Star: Petition submitted to set up conservation area for rare langur species in Ninh Binh (2 Aug 2025)"
+        url: https://www.thestar.com.my/aseanplus/aseanplus-news/2025/08/02/petition-submitted-to-set-up-conservation-area-for-rare-langur-species-in-ninh-bnh
+        locator: "news article"
+        quote: "Since 2016, conservation organisations and Government agencies have proposed establishing"
+        checked: full_text
     reviewed_by_svw: false
 
   - id: CN-CHONGZUO-RESERVE
     kind: precedent
     jurisdiction: China
-    name: National nature reserve and habitat regulation for the white-headed langur (Chongzuo, Guangxi)
+    name: Anti-poaching and a habitat conservation regulation for the white-headed langur (Chongzuo, Guangxi)
+    plain_name: "the white-headed langur habitat regulation in Guangxi, China"
+    plain_use: "would ban destroying or converting the langur's habitat"
     summary: >
-      A sister limestone langur is protected by a national nature reserve,
-      anti-poaching enforcement, and a 2021 habitat conservation regulation
-      that bans habitat destruction and conversion inside the species' range.
+      A sister limestone langur is protected through reduced poaching and a
+      2021 habitat conservation regulation, enacted by the Chongzuo
+      government, that bans habitat destruction and natural habitat conversion
+      within the species' current range [1].
     evidence: >
       Surveys ten years apart counted 818 langurs in 105 groups (2010-2011) and
-      1,183 in 128 groups (2020-2021). The authors attribute the increase
-      mainly to reduced poaching. Over the longer run the species' range fell
-      from 200 km2 in 1999 to 99.3 km2 in 2021, and the population is split
-      across six forest fragments separated by farmland and roads.
+      1,183 in 128 groups (2020-2021); the authors find reduced poaching the
+      strongest explanation for the increase [1]. Over the longer run the
+      species' range fell from 200 km2 in 1999 to 99.3 km2 in 2021, and the
+      population is split across six forest fragments separated by farmland
+      and roads [1].
     outcome: mixed
     applies_when:
       driver: [farming, other]
@@ -357,12 +434,14 @@ cases:
         status: unknown
         note: No equivalent habitat regulation for Delacour's langur was found; the Kim Bang designation is a protected area, which is a different tool.
     limitations: >
-      The population grew while its habitat halved, so this is evidence for
+      The population grew while its range halved [1], so this is evidence for
       anti-poaching enforcement more than for habitat protection. The source
       does not cover quarrying.
     sources:
       - title: "Tang et al. (2024) Population dynamics and conservation status of the white-headed langur in the Chongzuo forest fragments, Guangxi, China. Oryx 58(2): 179-182 (doi:10.1017/S0030605323000029)"
         url: https://www.cambridge.org/core/product/B751E7BDC269EE0C7CD8FB90BD29DCEB/core-reader
+        locator: "main text"
+        quote: "a marked reduction in poaching appears to offer the strongest explanation"
         checked: full_text
     reviewed_by_svw: false
 
@@ -370,15 +449,19 @@ cases:
     kind: precedent
     jurisdiction: India
     name: Fixed no-mining distance around protected areas (Supreme Court of India, 2023)
+    plain_name: "India's fixed no-mining buffer around protected areas"
+    plain_use: "would ban mining within a set distance of the protected area"
     summary: >
-      India's Supreme Court ruled that mining is not permissible inside
-      national parks and wildlife sanctuaries or within one kilometre of their
-      boundaries, and that where a declared eco-sensitive zone is wider than
-      one kilometre the ban covers the wider zone.
+      India's Supreme Court held that mining is not permissible inside national
+      parks and wildlife sanctuaries or within one kilometre of their
+      boundaries [1].
     evidence: >
-      The ruling was given on 26 April 2023 in the T.N. Godavarman case,
-      modifying an order of 3 June 2022, and clarified on 28 April 2023. It
-      applies across India's 104 national parks and 558 wildlife sanctuaries.
+      Paragraph 65 of the Court's judgment of 26 April 2023 in the T.N.
+      Godavarman case set the rule, and the order of 28 April 2023 restates it,
+      noting that a ban earlier limited to Goa now applies across India [1]. The Court's order of 26 April 2023 relaxed the
+      uniform one-kilometre eco-sensitive zone for other activities while
+      keeping the mining ban, and noted that India has 104 national parks and
+      558 wildlife sanctuaries [2].
     outcome: unmeasured
     applies_when:
       driver: [mining]
@@ -396,19 +479,20 @@ cases:
         check: {field: g_protected, in: [buffer]}
       - text: A national body can impose one distance on every province
         status: unknown
-        note: India's rule came from public-interest litigation in its Supreme Court. No source was found for an equivalent route in Vietnam; the nearest equivalent would be a Government decree or a provincial decision.
+        note: India's rule came from public-interest litigation in its Supreme Court [1]. No source was found for an equivalent route in Vietnam; the nearest equivalent would be a Government decree or a provincial decision.
     limitations: >
       No measurement of the ruling's effect on forest or wildlife was found.
-      The earlier uniform one-kilometre zone was criticised by experts in India
-      as lacking a site-by-site scientific basis.
+      The Court relaxed the uniform zone for other activities [2], so the fixed
+      distance survives only for mining.
     sources:
+      - title: "Supreme Court of India: In re T.N. Godavarman Thirumulpad v. Union of India, order of 28 April 2023 (PDF)"
+        url: https://main.sci.gov.in/supremecourt/1995/2997/2997_1995_8_55_44035_Judgement_28-Apr-2023.pdf
+        locator: "order of 28 April 2023, quoting paragraph 65 of the judgment of 26 April 2023"
+        quote: "within an area of one kilometre from the boundary of such National Park"
+        checked: passage
       - title: "Down To Earth: Supreme Court modifies order on construction ban within one kilometre of protected areas (26 Apr 2023)"
         url: https://www.downtoearth.org.in/forests/supreme-court-modifies-order-on-construction-ban-within-one-kilometre-of-protected-areas-88982
-        checked: search_excerpt
-      - title: "Supreme Court of India: In re T.N. Godavarman Thirumulpad v. Union of India, judgment of 28 April 2023"
-        url: https://main.sci.gov.in/supremecourt/1995/2997/2997_1995_8_55_44035_Judgement_28-Apr-2023.pdf
-        checked: search_excerpt
-      - title: "Khaitan & Co: Supreme Court clarifies that mining in eco sensitive zone is prohibited even if its boundaries extend beyond one kilometre"
-        url: https://www.mondaq.com/india/mining/1330472/supreme-court-clarifies-that-mining-in-eco-sensitive-zone-is-prohibited-even-if-its-boundaries-extend-beyond-one-kilometre
-        checked: search_excerpt
+        locator: "news report"
+        quote: "There are 104 national parks and 558 wildlife sanctuaries in India"
+        checked: full_text
     reviewed_by_svw: false

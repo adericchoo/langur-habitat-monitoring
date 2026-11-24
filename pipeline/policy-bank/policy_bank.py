@@ -18,7 +18,8 @@ Three steps, all rule-based:
             then a transferability grade from the case's preconditions. A case
             already in place at this site (its home site) is graded "in place"
             and worded as a check on whether it is working.
-  brief     a Markdown brief per site and one JSON file for the dashboard
+  brief     a Markdown brief per site, a plain-English overview built from
+            templates (overview.py), and one JSON file for the dashboard
 
 The scorer's audit file carries the ranking; the hotspot attributes the
 matching reads (protection status, licence status, occupancy) come from the
@@ -30,12 +31,15 @@ so the same inputs always produce the same briefs.
     python3 policy_bank.py                                   # default paths
     python3 policy_bank.py --scored a.csv --inputs b.csv --out outputs
     python3 policy_bank.py --narrate                         # adds a model-written summary
+    python3 policy_bank.py --ids                             # print the id table, not the overview
 """
-import argparse, csv, hashlib, json, sys
+import argparse, csv, hashlib, json, re, sys
 from collections import Counter
 from pathlib import Path
 
 import yaml
+
+import overview as ov
 
 HERE = Path(__file__).resolve().parent
 GRADE_ORDER = ["in_place", "ready", "confirm", "groundwork"]
@@ -43,6 +47,47 @@ ACTION_URGENCY = ["act", "survey_gap", "watch", "log"]
 ATTRIBUTES = ["g_protected", "g_designation", "g_unlicensed", "v_occupancy"]
 SWITCH_NAMES = {"driver": "loss driver", "g_protected": "protection status",
                 "licence": "licence status", "v_occupancy": "langur evidence"}
+CHECKED = ("full_text", "passage", "search_excerpt")
+QUOTE_MAX_WORDS = 14            # quotes stay under 15 words
+CITATION = re.compile(r"\[(\d+)\]")
+
+
+def cited_text(case):
+    """The case fields that may carry [n] citation markers."""
+    parts = [case["summary"], case["evidence"], case["limitations"]]
+    parts += [p.get("note") or "" for p in case["preconditions"]]
+    return " ".join(parts)
+
+
+def check_sources(case):
+    """Each source has a locator and a short verbatim quote unless only a search
+    excerpt was read; every [n] marker resolves and every source is cited."""
+    cid, sources = case["id"], case["sources"]
+    for n, src in enumerate(sources, 1):
+        for key in ("title", "url", "checked"):
+            if not src.get(key):
+                raise ValueError(f"case {cid} source {n} has no {key}")
+        if src["checked"] not in CHECKED:
+            raise ValueError(f"case {cid} source {n}: checked must be one of {CHECKED}")
+        if src["checked"] == "search_excerpt":
+            if src.get("quote"):
+                raise ValueError(f"case {cid} source {n} quotes a search excerpt; read the "
+                                 "source itself before quoting it")
+            continue
+        for key in ("quote", "locator"):
+            if not src.get(key):
+                raise ValueError(f"case {cid} source {n} has no {key}")
+        if len(src["quote"].split()) > QUOTE_MAX_WORDS:
+            raise ValueError(f"case {cid} source {n}: quote is over {QUOTE_MAX_WORDS} words")
+    if not CITATION.search(case["evidence"]):
+        raise ValueError(f"case {cid}: evidence cites no source")
+    cited = {int(m) for m in CITATION.findall(cited_text(case))}
+    bad = sorted(n for n in cited if not 1 <= n <= len(sources))
+    if bad:
+        raise ValueError(f"case {cid} cites source(s) {bad} but lists {len(sources)}")
+    uncited = sorted(set(range(1, len(sources) + 1)) - cited)
+    if uncited:
+        raise ValueError(f"case {cid} never cites source(s) {uncited}")
 
 
 def file_hash(path):
@@ -57,8 +102,8 @@ def read_csv(path):
 def load_bank(path):
     """Reads the case bank and checks each case has the fields a brief prints."""
     bank = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
-    required = ["id", "kind", "jurisdiction", "name", "summary", "evidence",
-                "outcome", "applies_when", "fit_note", "preconditions",
+    required = ["id", "kind", "jurisdiction", "name", "plain_name", "plain_use", "summary",
+                "evidence", "outcome", "applies_when", "fit_note", "preconditions",
                 "limitations", "sources"]
     seen = set()
     for case in bank["cases"]:
@@ -71,13 +116,16 @@ def load_bank(path):
             raise ValueError(f"case {case['id']} has unknown kind {case['kind']}")
         if not case["sources"]:
             raise ValueError(f"case {case['id']} has no source")
+        check_sources(case)
         alt = case.get("fit_note_if_assumed", {})
         for key in case["applies_when"]:
             if key in ATTRIBUTE_SWITCHES and key not in alt:
                 raise ValueError(f"case {case['id']} switches on {key} but has no "
                                  f"fit_note_if_assumed.{key} for when it is unknown")
-        if case.get("home_sites") and not case.get("at_home_site"):
-            raise ValueError(f"case {case['id']} names home_sites but has no at_home_site wording")
+        if case.get("home_sites"):
+            for key in ("at_home_site", "plain_home_name", "plain_home_check"):
+                if not case.get(key):
+                    raise ValueError(f"case {case['id']} names home_sites but has no {key} wording")
         seen.add(case["id"])
     return bank
 
@@ -238,6 +286,9 @@ def match(facts, bank, cfg):
             "matched_on": matched, "assumed": [] if home else assumed,
             "sources": case["sources"],
             "reviewed_by_svw": case.get("reviewed_by_svw", False),
+            "plain_name": case["plain_name"], "plain_use": case["plain_use"],
+            "plain_home_name": case.get("plain_home_name", ""),
+            "plain_home_check": case.get("plain_home_check", ""),
         })
     eligible.sort(key=lambda o: (GRADE_ORDER.index(o["grade"]), o["country"] != "Vietnam",
                                  -len(o["matched_on"]), o["case_id"]))
@@ -251,7 +302,7 @@ def match(facts, bank, cfg):
             set_aside.append({"case_id": opt["case_id"], "name": opt["name"],
                               "reason": f"eligible; the brief carries at most {cfg['max_' + opt['kind'] + 's']} {opt['kind']}s"})
     options.sort(key=lambda o: (GRADE_ORDER.index(o["grade"]), o["kind"] != "instrument",
-                                o["country"] != "Vietnam", o["case_id"]))
+                                o["country"] != "Vietnam", -len(o["matched_on"]), o["case_id"]))
     return options, set_aside
 
 
@@ -278,6 +329,14 @@ def group_heading(facts, cfg):
             if facts["g_protected"] else "Protection status not known")
 
 
+def source_line(src):
+    """One numbered source: link, where the quote sits, and the quote itself."""
+    link = f"[{src['title']}]({src['url']})"
+    if src["checked"] == "search_excerpt":
+        return f"{link} (search excerpt only; source text to be checked)"
+    return f"{link}. {src['locator'][0].upper() + src['locator'][1:]}: \u201c{src['quote']}\u201d"
+
+
 def render_markdown(brief, not_briefed, provenance, cfg):
     kind = cfg["brief_types"][brief["action"]]
     tiers = ", ".join(f"{n} {t}" for t, n in brief["patches"]["by_tier"].items())
@@ -286,8 +345,12 @@ def render_markdown(brief, not_briefed, provenance, cfg):
            f"| {brief['patches']['count']} flagged patches ({tiers}) | triage action: {brief['action']}",
            "", f"> {' '.join(cfg['caveat'].split())}", "",
            " ".join(kind["lead"].split()), ""]
+    out += ["## In brief", "", brief["overview"], ""]
     if brief.get("narrative"):
-        out += ["## Summary", "", brief["narrative"], ""]
+        out += ["## Model-written summary", "",
+                "*Written by a language model from this brief's options and checked "
+                "against them; the sections below are the authority.*", "",
+                brief["narrative"], ""]
 
     out += ["## What was flagged", ""]
     area = brief["patches"].get("area_ha")
@@ -304,7 +367,10 @@ def render_markdown(brief, not_briefed, provenance, cfg):
     out += ["", "The full ranked list is in the scorer's `priority-areas.csv`.", ""]
 
     out += ["## How the options are graded", "",
-            " ".join(cfg["grade_legend"].split()), ""]
+            " ".join(cfg["grade_legend"].split()), "",
+            "A number in square brackets, such as [1], points to the numbered sources under "
+            "that option. Each source is listed with a short verbatim quote and where in the "
+            "source it appears, so a claim can be checked against the text.", ""]
 
     many = len(brief["groups"]) > 1
     if many:
@@ -339,9 +405,7 @@ def render_markdown(brief, not_briefed, provenance, cfg):
                     out.append(f"- {c['text']}: **{STATUS_MARK[c['status']]}**.{note}")
                 out.append("")
             out += [f"**Limits.** {o['limitations']}", "", "**Sources.**", ""]
-            for src in o["sources"]:
-                tail = "" if src["checked"] == "full_text" else " (search excerpt only; article text to be checked)"
-                out.append(f"- [{src['title']}]({src['url']}){tail}")
+            out += [f"{n}. {source_line(src)}" for n, src in enumerate(o["sources"], 1)]
             out.append("")
         if g["set_aside"]:
             out += ["**Considered and set aside for these patches:**", ""]
@@ -430,6 +494,10 @@ def run(path_scored, path_inputs, path_out, path_bank=HERE / "policy_cases.yaml"
                   "config_version": cfg["config_version"], "config_hash": file_hash(path_cfg)}
 
     briefs = [site_brief(site, rows, inputs_by_id, bank, cfg) for site, rows in chosen]
+    for b in briefs:
+        b["overview"] = ov.site_overview(b, cfg)
+    site_names = {r["site_id"]: cfg.get("site_labels", {}).get(r["site_id"], r["site_id"]) for r in scored}
+    run_text = ov.run_overview(briefs, not_briefed, scored, cfg, site_names)
 
     if narrate:
         from narrate import add_narratives
@@ -441,7 +509,14 @@ def run(path_scored, path_inputs, path_out, path_bank=HERE / "policy_cases.yaml"
         text = render_markdown(b, not_briefed, provenance, cfg)
         (out_dir / "briefs" / f"{b['site_id']}.md").write_text(text, encoding="utf-8")
     payload = {"provenance": provenance, "caveat": " ".join(cfg["caveat"].split()),
+               "overview": {"run": run_text, "sites": {b["site_id"]: b["overview"] for b in briefs}},
                "briefs": briefs, "not_briefed": not_briefed}
+    md = ["# Policy bank: overview of this run", "", f"> {payload['caveat']}", "", run_text, ""]
+    for b in briefs:
+        md += [b["overview"], "", f"Full brief: [briefs/{b['site_id']}.md](briefs/{b['site_id']}.md)", ""]
+    md += ["---", "", f"Case bank {provenance['bank_version']} ({provenance['bank_hash']}), "
+           f"policy config {provenance['config_version']} ({provenance['config_hash']}).", ""]
+    (out_dir / "overview.md").write_text("\n".join(md), encoding="utf-8")
     (out_dir / "policy-briefs.json").write_text(
         json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return payload
@@ -454,6 +529,8 @@ if __name__ == "__main__":
     ap.add_argument("--inputs", default="hotspots-scoring-input.csv",
                     help="the scorer's input file, for the hotspot attributes")
     ap.add_argument("--out", default=str(HERE / "outputs"))
+    ap.add_argument("--ids", action="store_true",
+                    help="print the case-id table instead of the plain-English overview")
     ap.add_argument("--narrate", action="store_true",
                     help="add a model-written summary to each brief (needs LLM_BASE_URL and LLM_MODEL)")
     a = ap.parse_args()
@@ -461,6 +538,15 @@ if __name__ == "__main__":
         print(f"note: {a.inputs} not found; matching runs on change class alone", file=sys.stderr)
         a.inputs = None
     res = run(a.scored, a.inputs, a.out, narrate=a.narrate)
+    if not a.ids:
+        import textwrap
+        wrap = lambda t: textwrap.fill(ov.plain_text(t), width=100)
+        print(wrap(res["overview"]["run"]), end="\n\n")
+        for b in res["briefs"]:
+            print(wrap(b["overview"]), end="\n\n")
+        print(f"Overview with links: {Path(a.out) / 'overview.md'}")
+        print(f"Full briefs:         {Path(a.out) / 'briefs'}")
+        sys.exit(0)
     print(f"{'site':<22}{'patches':>8}{'top':>7}  {'action':<9}options")
     for b in res["briefs"]:
         for i, g in enumerate(b["groups"]):

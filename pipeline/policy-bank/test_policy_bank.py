@@ -2,7 +2,7 @@
 
     python -m pytest pipeline/policy-bank
 """
-import csv, json, sys
+import csv, copy, json, re, sys
 from pathlib import Path
 
 import pytest
@@ -53,7 +53,78 @@ def test_every_case_has_a_source_with_a_url(bank):
     for case in bank["cases"]:
         for s in case["sources"]:
             assert s["url"].startswith("https://"), case["id"]
-            assert s["checked"] in ("full_text", "search_excerpt"), case["id"]
+            assert s["checked"] in pb.CHECKED, case["id"]
+
+
+def test_every_source_was_read_and_carries_a_short_quote_and_a_locator(bank):
+    for case in bank["cases"]:
+        for n, s in enumerate(case["sources"], 1):
+            where = f"{case['id']} source {n}"
+            assert s["checked"] in ("full_text", "passage"), where   # nothing rests on a search excerpt
+            assert s["locator"].strip(), where
+            assert 0 < len(s["quote"].split()) < 15, where
+
+
+def test_every_citation_resolves_and_every_source_is_cited(bank):
+    for case in bank["cases"]:
+        assert re.search(r"\[\d+\]", case["evidence"]), case["id"]
+        cited = {int(m) for m in re.findall(r"\[(\d+)\]", pb.cited_text(case))}
+        assert cited == set(range(1, len(case["sources"]) + 1)), case["id"]
+
+
+def test_an_instrument_leads_with_the_policy_text_itself(bank):
+    """The overview links an option's name to its first source, so for a law
+    that source is the law, quoted at an article."""
+    for case in bank["cases"]:
+        if case["kind"] == "instrument":
+            assert "Article" in case["sources"][0]["locator"], case["id"]
+
+
+def _bank_with(tmp_path, bank, **edits):
+    case = copy.deepcopy(bank["cases"][0])
+    for key, value in edits.items():
+        case[key] = value
+    p = tmp_path / "bank.yaml"
+    p.write_text(yaml.safe_dump({"bank_version": "x", "cases": [case]}), encoding="utf-8")
+    return p, case
+
+
+def test_load_bank_rejects_a_quoted_search_excerpt(tmp_path, bank):
+    sources = copy.deepcopy(bank["cases"][0]["sources"])
+    sources[0]["checked"] = "search_excerpt"
+    p, _ = _bank_with(tmp_path, bank, sources=sources)
+    with pytest.raises(ValueError, match="search excerpt"):
+        pb.load_bank(p)
+
+
+def test_load_bank_rejects_an_overlong_quote(tmp_path, bank):
+    sources = copy.deepcopy(bank["cases"][0]["sources"])
+    sources[0]["quote"] = " ".join(["word"] * 15)
+    p, _ = _bank_with(tmp_path, bank, sources=sources)
+    with pytest.raises(ValueError, match="over"):
+        pb.load_bank(p)
+
+
+def test_load_bank_rejects_a_citation_to_a_missing_source(tmp_path, bank):
+    p, case = _bank_with(tmp_path, bank)
+    case["evidence"] += " A further claim [9]."
+    p.write_text(yaml.safe_dump({"bank_version": "x", "cases": [case]}), encoding="utf-8")
+    with pytest.raises(ValueError, match=r"\[9\]"):
+        pb.load_bank(p)
+
+
+def test_load_bank_rejects_a_source_nobody_cites(tmp_path, bank):
+    sources = copy.deepcopy(bank["cases"][0]["sources"])
+    sources.append(dict(sources[0], title="Unused"))
+    p, _ = _bank_with(tmp_path, bank, sources=sources)
+    with pytest.raises(ValueError, match="never cites"):
+        pb.load_bank(p)
+
+
+def test_load_bank_rejects_evidence_without_a_citation(tmp_path, bank):
+    p, _ = _bank_with(tmp_path, bank, evidence="An unsourced claim.")
+    with pytest.raises(ValueError, match="cites no source"):
+        pb.load_bank(p)
 
 
 def test_applies_when_uses_known_keys_and_values(bank, cfg):
@@ -120,6 +191,15 @@ def test_mining_outside_protection_gets_the_designation_precedent(bank, cfg):
     ids = [o["case_id"] for o in options]
     assert "VN-KIMBANG-DESIGNATION" in ids
     assert "VN-MINERALS-2024" in [s["case_id"] for s in set_aside]
+
+
+def test_a_case_matching_more_of_the_patch_is_listed_first(bank, cfg):
+    """Quarrying inside a reserve: the mining ban (matches driver and protection)
+    comes before the forestry rule (matches protection only), so the overview,
+    which shows the first options, names the ban."""
+    options, _ = pb.match(facts(g_protected="inside", licence="", g_unlicensed=""), bank, cfg)
+    ids = [o["case_id"] for o in options]
+    assert ids.index("VN-MINERALS-2024") < ids.index("VN-FORESTRY-2017")
 
 
 def test_a_failed_check_grades_the_option_as_groundwork(bank, cfg):
@@ -241,6 +321,7 @@ def test_end_to_end_from_the_scorer(scored, tmp_path, cfg):
             for o in g["options"]:
                 assert f"[{o['case_id']}]" in md
                 assert all(s["url"] in md for s in o["sources"])
+                assert all(f"\u201c{s['quote']}\u201d" in md for s in o["sources"])
     assert json.loads((tmp_path / "out" / "policy-briefs.json").read_text(encoding="utf-8")) == payload
 
 
@@ -280,6 +361,35 @@ def test_patches_that_match_differently_are_grouped_with_their_own_options(score
     md = (tmp_path / "out" / "briefs" / f"{kim['site_id']}.md").read_text(encoding="utf-8")
     assert "## Options for patches outside any protected area (1 of 2)" in md
     assert "## Options for patches in a protected-area buffer zone (1 of 2)" in md
+
+
+# --- the plain-English overview ---------------------------------------------
+
+def test_the_overview_is_plain_english_with_links_and_no_ids(scored, tmp_path, bank):
+    payload = pb.run(scored, SAMPLE, tmp_path / "out")
+    text = (tmp_path / "out" / "overview.md").read_text(encoding="utf-8")
+    assert not any(c["id"] in text for c in bank["cases"])
+    assert not re.search(r"\bHS-\d", text)                 # no hotspot ids either
+    assert not re.search(r"\[\d+\]", text)                # citation markers stay in the briefs
+    main_sources = {c["sources"][0]["url"] for c in bank["cases"]}
+    linked = set(re.findall(r"\]\((https://[^)]+)\)", text))
+    assert linked and linked <= main_sources                # each link is a case's main source
+    for b in payload["briefs"]:
+        assert b["site_name"] in text
+        assert b["overview"] == payload["overview"]["sites"][b["site_id"]]
+
+
+def test_the_overview_is_conditional_when_protection_is_unknown(scored, tmp_path):
+    payload = pb.run(scored, None, tmp_path / "out")        # no protection status at all
+    for b in payload["briefs"]:
+        assert "is already in place" in b["overview"] or "confirm that" in b["overview"]
+        assert "every condition for it holds" not in b["overview"]
+
+
+def test_the_overview_says_the_same_thing_twice(scored, tmp_path):
+    pb.run(scored, SAMPLE, tmp_path / "a")
+    pb.run(scored, SAMPLE, tmp_path / "b")
+    assert (tmp_path / "a" / "overview.md").read_bytes() == (tmp_path / "b" / "overview.md").read_bytes()
 
 
 def _edit_first_row(scored, tmp_path, **changes):

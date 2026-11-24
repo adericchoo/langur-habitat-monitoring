@@ -93,12 +93,33 @@ reader without this README knows what they mean. The site's triage action
 sets the framing: `act` gives an escalation brief, `watch` a monitoring brief, `survey_gap` a survey-first brief
 that leads with confirming occupancy, `log` a for-the-record brief. Each option
 shows what it is, why it fits, the evidence, the preconditions with their
-status, its limits and its sources.
+status, its limits and its numbered sources. Claims in the evidence carry
+markers such as [1], and each source is listed with a short verbatim quote and
+where in the source it sits (article and clause for a law), so a reader can
+check a claim against the text.
 
-Steps 1 to 4 are plain code with no model in the loop, so the same inputs give
-byte-identical briefs.
+**5. Plain-English overview.** Each brief opens with an "In brief" paragraph,
+and `outputs/overview.md` collects one paragraph per briefed site under a
+run-level opening. The text is built from templates (`overview.py`), not by a
+model: every clause comes from a field the run already holds (the scorer's
+counts and tiers, each case's curated `plain_name` and `plain_use`, the grade,
+and the status of each precondition). The wording follows the grade: "is
+already in place here, so ...", "can be raised now", "before raising it,
+confirm that ...", or "needs groundwork first". Where an attribute such as
+licence status is unknown, the sentence names the condition to confirm rather
+than stating it. Each option's name links to the case's main source, which for
+a law is the law itself. Case ids and hotspot ids stay in the briefs and the
+JSON; the overview carries none.
 
-**5. Optional summary (`--narrate`).** A language model can add one summary
+Templates were chosen over a language model for this step because the
+overview is the part most people will read, and a template cannot state a fact
+the run does not hold. The optional model summary below is kept separate and
+checked.
+
+Steps 1 to 5 are plain code with no model in the loop, so the same inputs give
+byte-identical briefs and overview.
+
+**6. Optional summary (`--narrate`).** A language model can add one summary
 paragraph per brief. It is shown only that brief's matched options and its
 output is checked: every case it cites must be one of the brief's options,
 every number must appear in the material it was shown, and it must cite at
@@ -134,11 +155,16 @@ python -m pytest pipeline/policy-bank
 Output goes to `pipeline/policy-bank/outputs/` (gitignored until
 reviewed):
 
+- `overview.md`: the plain-English overview, with links to each option's main
+  source. The terminal prints the same text without links; `--ids` prints the
+  hotspot and case id table instead.
 - `briefs/<site_id>.md`: one brief per selected site.
 - `policy-briefs.json`: the same content for the dashboard. Each option carries
   `name`, `country`, `description`, `howItFits`, `limitations` and `sources`,
   the fields the policy step's sample bank (`web/src/samples/policyBank.ts`)
-  already uses, plus the grade and preconditions.
+  already uses, plus the grade and preconditions. Each source carries
+  `locator`, `quote` and `checked`. The run's overview text is under
+  `overview`, keyed by site.
 
 `sample/hotspots-scoring-input.csv` is **synthetic**: eight invented hotspots
 on publicly-known site names, shaped like the scorer's input, with no
@@ -152,8 +178,9 @@ two Vietnamese precedents (Van Long, Kim Bang) and two from elsewhere (Guangxi,
 India). The design target is 30 to 50.
 
 To add a case, copy an entry and fill every field. The tests check that each
-case has a source, that its switches use known values, and that each
-precondition has either a `check` or a `status`.
+case has a source, that its switches use known values, that each precondition
+has either a `check` or a `status`, and that the sources and citations below
+hold.
 
 A case that switches on `g_protected`, `licence` or `v_occupancy` also needs a
 `fit_note_if_assumed` entry for that switch: the wording the brief uses when
@@ -162,17 +189,31 @@ unknown as fact (the first real run had no licence data, and the deposit case
 claimed the patch sat "inside a known concession"). The bank refuses to load a
 case that is missing it. Rules for curating:
 
-- Every figure in `evidence` comes from a listed source.
-- Mark each source `full_text` or `search_excerpt` honestly. Excerpt-only
-  sources are flagged in the brief.
+- Every claim in `evidence` carries a marker such as [1] pointing to a listed
+  source. Every marker must resolve to a source and every source must be
+  cited; the bank refuses to load otherwise.
+- Read the source itself before quoting it. Mark each source `full_text` (the
+  whole source was read), `passage` (the passage around the quote was read in
+  the source, such as a law's article or a paper's abstract) or
+  `search_excerpt` (only a search-engine excerpt was read). A search excerpt
+  may not carry a quote and is flagged in the brief; the current bank has none.
+- Give each read source a `locator` (article and clause for a law, page or
+  section otherwise) and a verbatim English `quote` under 15 words. Quotes are
+  kept short and the bank holds no full texts, which is why it can sit in a
+  public repository; follow the link for the full text.
+- List the policy text itself first where an English version exists. The
+  overview links the case's name to the first source.
 - Write the limits as carefully as the evidence. A case with mixed or
   unmeasured results belongs in the bank and is labelled as such.
 - Set `reviewed_by_svw: true` only after SVW has signed the entry off.
 
 ## Caveats
 
-- **No case is SVW-reviewed yet**, and several legal sources were read as
-  search excerpts only. Every brief says so per option.
+- **No case is SVW-reviewed yet.** Every brief says so per option.
+- **Laws are quoted from unofficial English translations.** The Vietnamese
+  text is authoritative. The Decree 08/2022 translation predates later
+  amendments, so the current wording of Article 37 needs checking; the case's
+  limits say so.
 - **No option currently grades as "ready to raise"**: each case has at least
   one precondition still marked unknown. That is the honest state of the bank.
 - **The curator's precondition statuses are provisional** readings from desk

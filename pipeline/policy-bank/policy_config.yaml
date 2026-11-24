@@ -1,4 +1,4 @@
-config_version: "0.3-provisional"
+config_version: "0.4-provisional"
 note: >
   Every tunable the policy bank uses lives in this file: how many sites are
   briefed, how many options a brief carries, how a change class maps to a loss
@@ -109,3 +109,15 @@ site_labels:
   huong-son-lac-thuy: Huong Son - Lac Thuy
   kim-bang: Kim Bang
   van-long-dong-tam: Van Long - Dong Tam
+
+# Plain-English overview (overview.py). Options named per site: all of a
+# single-group site's options up to the first number, or up to the second
+# number per group where a site's patches split into groups.
+overview_options_single: 3
+overview_options_per_group: 2
+
+# How the overview names a site's patches, by loss driver.
+driver_patch_noun:
+  mining: suspected quarry patches
+  farming: suspected patches of forest cleared for farming
+  other: suspected patches of forest lost to built-up land
