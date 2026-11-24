@@ -26,6 +26,10 @@ __pycache__/
 .venv/
 .ipynb_checkpoints/
 
+# priority-scoring outputs — hotspot rows carry precise quarry coordinates;
+# per SECURITY.md they never enter git.
+pipeline/priority-scoring/outputs/
+
 # habitat-loss metric outputs — review before publishing; the CSV is aggregated
 # (safe tier) but kept out of git until a human has checked it.
 pipeline/metrics/outputs/
@@ -196,3 +200,7 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# policy-bank outputs — briefs are regenerated from the scorer's output and are
+# kept out of git until Save Vietnam's Wildlife has reviewed them.
+pipeline/policy-bank/outputs/

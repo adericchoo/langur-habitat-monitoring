@@ -1,11 +1,13 @@
-config_version: "0.5-provisional"
+config_version: "0.6"
 weights_elicited: false
 note: >
   Every tunable the scorer uses lives in this file: dimension weights,
   value-function anchors, ordinal maps and thresholds.
-  All values are provisional. Dimension weights come from AI for Good by swing
-  weighting; the value-function anchors want calibrating against the first real
-  hotspot table.
+  Dimension weights are provisional until elicited (swing weighting).
+  Value-function anchors were calibrated on 23 Nov 2026 against the first real
+  hotspot table (183 patches, 2017->2025 classifications); the previous
+  anchors saturated most rows. Treat them as fixed from here: changing an
+  anchor breaks comparability with earlier runs.
   Detection confidence is applied upstream, by the classifier, before the
   build step.
 
@@ -27,13 +29,13 @@ value_functions:
   t_accel:              {kind: clamp,  lo: 0.5,  hi: 2.0}
   t_recency_years:      {kind: piecewise, points: [[0, 1.0], [1, 0.8], [2, 0.6], [4, 0.3], [6, 0.05]]}
   t_persist_years:      {kind: piecewise, points: [[1, 0.2], [5, 1.0]]}
-  v_remaining_ha:       {kind: satlog, x0: 50,   xsat: 5000}
+  v_remaining_ha:       {kind: satlog, x0: 500,  xsat: 25000} # was xsat:5000 — sites span 2.4k-22k ha
   v_canopy_frac:        {kind: identity}
   v_langur_dist_m:      {kind: decay,  d0: 750}
   v_evidence_years:     {kind: piecewise, points: [[0, 1.0], [5, 0.7], [10, 0.4], [20, 0.1]]}
   v_irrepl:             {kind: identity}
-  e_adjacent_ha:        {kind: satlog, x0: 0.5,  xsat: 15}
-  e_edge_frac:          {kind: identity}
+  e_adjacent_ha:        {kind: satlog, x0: 5,    xsat: 150}   # was x0:0.5 xsat:15 — 93% of real rows saturated
+  e_edge_frac:          {kind: clamp,  lo: 0,    hi: 0.05}    # real values 0-0.03; identity left it ~0
   g_access_km:          {kind: decay,  d0: 20}
   record_reliability:   {kind: identity}   # weights v_langur_dist by the quality of the record behind it
 
