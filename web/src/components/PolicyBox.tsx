@@ -6,6 +6,11 @@ export interface PolicyBoxProps {
   source: string
   howItFits: string
   limitations: string
+  /** Optional link for the source line. */
+  sourceUrl?: string
+  /** Optional section between "How it fits" and "Limitations", e.g. what to
+   *  check before raising the option. */
+  status?: { label: string; body: string }
   pinned?: boolean
   onTogglePin?: () => void
 }
@@ -19,6 +24,8 @@ export default function PolicyBox({
   source,
   howItFits,
   limitations,
+  sourceUrl,
+  status,
   pinned = false,
   onTogglePin,
 }: PolicyBoxProps) {
@@ -34,7 +41,22 @@ export default function PolicyBox({
       <p className="mt-2 text-sm">{description}</p>
 
       <div className="mt-3 flex items-center justify-between gap-3 border-t border-brd pt-3">
-        <p className="min-w-0 truncate text-xs text-secondary">Source: {source}</p>
+        <p className="min-w-0 truncate text-xs text-secondary">
+          Source:{' '}
+          {sourceUrl ? (
+            <a
+              href={sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              title={source}
+              className="underline-offset-2 hover:text-teal hover:underline"
+            >
+              {source}
+            </a>
+          ) : (
+            source
+          )}
+        </p>
         <button
           type="button"
           onClick={onTogglePin}
@@ -49,6 +71,7 @@ export default function PolicyBox({
       </div>
 
       <PolicySection label="How it fits" body={howItFits} />
+      {status ? <PolicySection label={status.label} body={status.body} /> : null}
       <PolicySection label="Limitations" body={limitations} />
     </div>
   )

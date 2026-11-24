@@ -11,6 +11,7 @@ the first source), so the dashboard says what the briefs say, in fewer words.
 
     dashboard_summary(briefs, not_briefed, scored, provenance, caveat, cfg)
 """
+import re
 from collections import Counter
 
 import overview as ov
@@ -23,24 +24,37 @@ def _source(option):
     return {k: src.get(k, "") for k in ("title", "url", "locator", "quote", "checked")}
 
 
+def _areas(text):
+    """The briefs say "patch"; the dashboard says "area" (see _applies_to)."""
+    text = re.sub(r"\b([Aa]) patch\b", r"\1n area", text)     # "a patch" -> "an area"
+    return re.sub(r"\bpatch(es)?\b", lambda m: "areas" if m.group(1) else "area", text)
+
+
+def _plain(text):
+    """Drops [n] citation markers: the dashboard card shows only the main source."""
+    return re.sub(r"\s*\[\d+\]", "", text).strip()
+
+
 def _next_step(option):
     """(next_step, more): the one thing to do or check, and how many more conditions."""
     grade = option["grade"]
     if grade == "in_place":
-        return ov.cap(option["plain_home_check"]), 0
+        return _areas(ov.cap(option["plain_home_check"])), 0
     if grade == "ready":
         return "Every condition for it holds here.", 0
     wanted = ("not_met",) if grade == "groundwork" else ("unknown", "partial")
     texts = [c["text"] for c in option["conditions"] if c["status"] in wanted]
-    return (texts[0] if texts else ""), max(len(texts) - 1, 0)
+    return _areas(texts[0] if texts else ""), max(len(texts) - 1, 0)
 
 
 def _applies_to(groups, total, cfg):
     count = sum(g["patch_count"] for g in groups)
+    # "areas", not "patches": this text is read on the dashboard by people
+    # who have not seen the scorer.
     if count == total:
-        return count, f"All {total} patches"
+        return count, f"All {total} areas"
     parts = [f"{g['patch_count']} {ov.group_label(g['facts'], cfg)}" for g in groups]
-    noun = "patch" if groups[0]["patch_count"] == 1 else "patches"
+    noun = "area" if groups[0]["patch_count"] == 1 else "areas"
     parts[0] = parts[0].replace(" ", f" {noun} ", 1)
     return count, ov.join(parts)
 
@@ -71,6 +85,12 @@ def site_options(brief, cfg):
             "name": ov.cap(o["plain_home_name"] if grade == "in_place" else o["plain_name"]),
             "does": ("Already in place at this site." if grade == "in_place"
                      else ov.cap(o["plain_use"]) + "."),
+            # The fields the Policy step's card (PolicyBox) shows: the case's
+            # formal name, what it is, why it fits these areas, and its limits.
+            "title": o["name"],
+            "description": _plain(o["description"]),
+            "how_it_fits": _areas(_plain(o["howItFits"])),
+            "limitations": _areas(_plain(o["limitations"])),
             "grade": grade,
             "next_step": step, "more_conditions": more,
             "patch_count": count, "applies_to": where,
@@ -80,11 +100,47 @@ def site_options(brief, cfg):
     return out
 
 
-def dashboard_summary(briefs, not_briefed, scored, provenance, caveat, cfg, site_names):
+def main_driver(brief):
+    """The loss driver behind most of the site's patches (e.g. "mining")."""
+    counts = Counter()
+    for g in brief["groups"]:
+        counts[g["facts"]["driver"]] += g["patch_count"]
+    return counts.most_common(1)[0][0]
+
+
+def all_sites(scored, briefs, site_names):
+    """Every scored site, briefed or not, with its patch count and best patch.
+    Lets the dashboard say something for a site that was not briefed."""
+    briefed = {b["site_id"] for b in briefs}
+    rows = {}
+    for r in scored:
+        rows.setdefault(r["site_id"], []).append(r)
+    out = []
+    for site_id, rs in rows.items():
+        ranked = sorted((r for r in rs if r["priority"]), key=lambda r: -float(r["priority"]))
+        top = ranked[0] if ranked else None
+        out.append({
+            "site_id": site_id, "site_name": site_names.get(site_id, site_id),
+            "briefed": site_id in briefed,
+            "patches": len(rs),
+            "by_tier": dict(sorted(Counter(r["tier"] for r in rs).items())),
+            "top_priority": float(top["priority"]) if top else None,
+            "top_tier": top["tier"] if top else "unscored",
+        })
+    return sorted(out, key=lambda s: -(s["top_priority"] or 0))
+
+
+def dashboard_summary(briefs, not_briefed, scored, provenance, caveat, cfg, site_names,
+                      inputs_by_id=None):
     tiers = Counter(r["tier"] for r in scored)
+    firsts = [int(r["t_first_year"]) for r in (inputs_by_id or {}).values()
+              if str(r.get("t_first_year", "")).isdigit()]
     return {
         "schema": SCHEMA,
         "run_year": scored[0]["run_year"] if scored else "",
+        # Earliest year a flagged change is dated to: with two classified dates
+        # this is the earlier image's year. None when the scorer input is absent.
+        "earliest_change_year": str(min(firsts)) if firsts else None,
         "caveat": caveat,
         "bank_version": provenance["bank_version"],
         "run": {
@@ -94,6 +150,7 @@ def dashboard_summary(briefs, not_briefed, scored, provenance, caveat, cfg, site
         },
         "sites": [{
             "site_id": b["site_id"], "site_name": b["site_name"],
+            "driver": main_driver(b),
             "action": b["action"], "brief_type": b["brief_type"],
             "top_priority": b["top_priority"], "top_tier": b["top_tier"],
             "patch_noun": ov.patch_noun(b, cfg),
@@ -102,6 +159,7 @@ def dashboard_summary(briefs, not_briefed, scored, provenance, caveat, cfg, site
             "options": site_options(b, cfg),
             "brief": f"briefs/{b['site_id']}.md",
         } for b in briefs],
+        "all_sites": all_sites(scored, briefs, site_names),
         "not_briefed": {
             "patches": not_briefed["count"],
             "sites": [site_names.get(s, s) for s in not_briefed["sites"]],

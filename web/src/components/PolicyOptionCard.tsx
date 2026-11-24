@@ -38,9 +38,11 @@ export default function PolicyOptionCard({ option, pinned, onTogglePin }: Policy
       </div>
 
       <h3 className="mt-2 text-sm font-bold leading-snug text-navy">{option.name}</h3>
-      <p className="text-xs text-secondary">
-        {option.kind === 'instrument' ? 'Law in force' : 'Precedent'} · {option.country}
-      </p>
+      {option.grade !== 'in_place' ? (
+        <p className="text-xs text-secondary">
+          {option.kind === 'instrument' ? `Law in ${option.country}` : `Example from ${option.country}`}
+        </p>
+      ) : null}
       <p className="mt-1.5 text-sm">{option.does}</p>
 
       <p className="mt-2 text-xs text-secondary">
@@ -64,7 +66,7 @@ export default function PolicyOptionCard({ option, pinned, onTogglePin }: Policy
         >
           ▸
         </span>
-        Source and scope
+        Where it applies and the source
       </button>
 
       {expanded ? (

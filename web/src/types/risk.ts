@@ -19,6 +19,9 @@ export interface RiskDimension {
   label: string
   /** Provisional weight (0–1); the four sum to 1. Shown as a "w 0.30" tag. */
   weight: number
+  /** 0–1 screening read for THIS dimension on this site — the per-dimension
+   *  signal the composite is built from, and what the panel's sort ranks on. */
+  score: number
   /** One screening-grade sentence for this dimension. */
   sentence: string
 }
@@ -31,6 +34,11 @@ export interface ConfidenceInfo {
   label: 'High' | 'Moderate' | 'Low'
   /** When true, show a "verify first" tag; does NOT lower the risk score. */
   verifyFirst: boolean
+  /** Real-run extras: how many of the scorer's indicators had data, and
+   *  which ones did not (plain labels). */
+  present?: number
+  total?: number
+  missing?: string[]
 }
 
 /** A site with its composite risk + the four dimensions that compose it. */
@@ -47,6 +55,13 @@ export interface RiskSite {
   pinned: boolean
   /** The four TVEG dimensions, in display order (threat → value → exposure → governance). */
   dimensions: RiskDimension[]
+  /** Real-run extras (absent on sample data): the scorer's 0–100 priority of the
+   *  site's most urgent area, its triage action, the scorer's top contributors,
+   *  and the site's area count. */
+  priority?: number
+  action?: 'act' | 'survey_gap' | 'watch' | 'log'
+  why?: string
+  patches?: number
 }
 
 /** Load states the panel can render. Real async states arrive with the B4

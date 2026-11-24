@@ -162,8 +162,11 @@ reviewed):
 - `policy-dashboard.json`: a compact copy for the dashboard's Policy step
   (`dashboard.py`, schema `policy-dashboard/v1`). Per briefed site it holds the
   headline numbers and the same few options the overview names, each with its
-  grade, one next step, the patches it covers and its main source with the
-  quote. It writes no new text: every string is copied from the briefs. The
+  grade, one next step, the patches it covers, its main source with the
+  quote, and the card fields the Policy step shows (`title`, `description`,
+  `how_it_fits`, `limitations`, with citation markers removed), plus `all_sites` with every scored site's patch count and best tier,
+  so the dashboard can say something for a site that was not briefed. It
+  writes no new text: every string is copied from the briefs. The
   dashboard reads a committed copy at `web/src/results/policy-dashboard-2025.json`;
   to update it, copy a new run's file over that one.
 - `policy-briefs.json`: the same content for the dashboard. Each option carries

@@ -412,6 +412,20 @@ def test_the_dashboard_file_is_a_compact_copy_of_the_briefs(scored, tmp_path, ba
             assert o["source"]["quote"] == sources[o["case_id"]]["quote"]
             assert 0 < o["patch_count"] <= site["patches"]["count"]
         assert "**" not in site["summary"] and "](" not in site["summary"]
+        assert site["driver"] in set(cfg["drivers"].values())
+        for o in site["options"]:
+            for field in ("title", "description", "how_it_fits", "limitations"):
+                assert o[field] and not re.search(r"\[\d+\]", o[field]), (o["id"], field)
+                assert not re.search(r"\b[Aa] area\b", o[field]), (o["id"], field)
+
+
+def test_the_dashboard_lists_every_scored_site(scored, tmp_path):
+    payload = pb.run(scored, SAMPLE, tmp_path / "out")
+    dash = json.loads((tmp_path / "out" / "policy-dashboard.json").read_text(encoding="utf-8"))
+    rows = list(csv.DictReader(open(scored)))
+    assert {s["site_id"] for s in dash["all_sites"]} == {r["site_id"] for r in rows}
+    assert sum(s["patches"] for s in dash["all_sites"]) == len(rows)
+    assert {s["site_id"] for s in dash["all_sites"] if s["briefed"]} == {b["site_id"] for b in payload["briefs"]}
 
 
 def test_an_option_shared_by_two_groups_is_listed_once(scored, tmp_path):

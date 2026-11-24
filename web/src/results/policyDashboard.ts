@@ -1,8 +1,8 @@
-import type { PolicyDashboard, PolicyGrade, TriageAction } from '../types/policy'
+import type { PolicyDashboard, PolicyGrade } from '../types/policy'
 import raw from './policy-dashboard-2025.json'
 
 /**
- * Policy-bank summary from the real 2017 → 2025 run (case bank 0.5). Written by
+ * Policy-bank results from the real 2017 → 2025 run (case bank 0.5). Written by
  * pipeline/policy-bank/dashboard.py; copy a new run's
  * outputs/policy-dashboard.json over policy-dashboard-2025.json to update it.
  *
@@ -11,33 +11,10 @@ import raw from './policy-dashboard-2025.json'
  */
 export const policyDashboard = raw as PolicyDashboard
 
-/** Grade → chip text, the label before the next step, and chip style. Literal
- *  classes so Tailwind's scanner keeps them. Brand colours only (map tones are
- *  reserved for the map). */
-export const GRADE: Record<PolicyGrade, { chip: string; next: string; cls: string }> = {
-  in_place: { chip: 'In place · check it', next: 'Check', cls: 'bg-teal-tint text-teal' },
-  ready: { chip: 'Ready to raise', next: 'Ready', cls: 'bg-teal text-card' },
-  confirm: { chip: 'Confirm first', next: 'Confirm', cls: 'border border-navy-tint text-navy' },
-  groundwork: {
-    chip: 'Groundwork first',
-    next: 'Not met here',
-    cls: 'border border-dashed border-navy-tint text-secondary',
-  },
+/** Grade → the heading of the card's "before raising it" section. */
+export const GRADE_LABEL: Record<PolicyGrade, string> = {
+  in_place: 'Already in place · next step',
+  ready: 'Ready to raise now',
+  confirm: 'Before raising it, confirm',
+  groundwork: 'What has to be true first',
 }
-
-export const ACTION_LABEL: Record<TriageAction, string> = {
-  act: 'Act',
-  survey_gap: 'Survey first',
-  watch: 'Watch',
-  log: 'Log',
-}
-
-/** "P1 · top priority 64.7" style tier line. */
-export const TIER_LABEL: Record<string, string> = {
-  P1: 'Top tier',
-  P2: 'Middle tier',
-  P3: 'Lowest tier',
-}
-
-/** Sentence-case a locator ("news article" → "News article"). */
-export const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)

@@ -28,6 +28,13 @@ export interface PolicyOption {
   kind: 'instrument' | 'precedent'
   country: string
   name: string
+  /** The case's formal name, shown as the card title. */
+  title: string
+  /** What the law or measure is. */
+  description: string
+  /** Why it fits these areas (worded conditionally when an attribute is unknown). */
+  how_it_fits: string
+  limitations: string
   /** One sentence: what raising it would do, or that it is already in place. */
   does: string
   grade: PolicyGrade
@@ -45,6 +52,8 @@ export interface PolicyOption {
 export interface PolicySite {
   site_id: string
   site_name: string
+  /** Loss driver behind most of the site's areas: "mining", "farming" or "other". */
+  driver: string
   action: TriageAction
   brief_type: string
   top_priority: number
@@ -59,12 +68,26 @@ export interface PolicySite {
   brief: string
 }
 
+/** Every scored site, briefed or not. */
+export interface PolicyRunSite {
+  site_id: string
+  site_name: string
+  briefed: boolean
+  patches: number
+  by_tier: Record<string, number>
+  top_priority: number | null
+  top_tier: string
+}
+
 export interface PolicyDashboard {
   schema: 'policy-dashboard/v1'
   run_year: string
+  /** Earliest year a flagged change is dated to (the earlier image's year). */
+  earliest_change_year: string | null
   caveat: string
   bank_version: string
   run: { patches: number; sites: number; by_tier: Record<string, number> }
   sites: PolicySite[]
+  all_sites: PolicyRunSite[]
   not_briefed: { patches: number; sites: string[] }
 }

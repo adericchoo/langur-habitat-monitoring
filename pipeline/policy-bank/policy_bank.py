@@ -523,7 +523,7 @@ def run(path_scored, path_inputs, path_out, path_bank=HERE / "policy_cases.yaml"
     (out_dir / "policy-briefs.json").write_text(
         json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     summary = dashboard.dashboard_summary(briefs, not_briefed, scored, provenance,
-                                          payload["caveat"], cfg, site_names)
+                                          payload["caveat"], cfg, site_names, inputs_by_id)
     (out_dir / "policy-dashboard.json").write_text(
         json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return payload

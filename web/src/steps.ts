@@ -7,7 +7,7 @@ export interface Step {
 export const STEPS: Step[] = [
   { slug: 'habitat-loss', label: 'Habitat loss' },
   { slug: 'fragmentation', label: 'Fragmentation' },
-  { slug: 'habitat-risk', label: 'Habitat risk' },
+  { slug: 'habitat-risk', label: 'Priority areas' },
   { slug: 'policy', label: 'Policy' },
   { slug: 'report', label: 'Report' },
 ]

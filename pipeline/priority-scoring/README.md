@@ -60,6 +60,22 @@ data, and none of the outputs, belong in this repository** — hotspot rows
 carry precise quarry coordinates, and the repo policy (SECURITY.md) keeps
 precise location data out of git. `outputs/` is gitignored accordingly.
 
+## Dashboard export
+
+`risk_summary.py` collapses the scorer's per-patch output to one card per
+site for the dashboard's Habitat risk step: each site is read through its
+most urgent patch, whose four dimension reads, priority and tier become the
+card's dimensions, 0-1 score and High/Med/Low band. Confidence is the share
+of the scorer's indicators present for that patch, reported separately from
+the score, with "verify first" set for historically-occupied but unsurveyed
+sites. The file carries no coordinates. The dashboard reads a committed copy
+at `web/src/results/risk-dashboard-2025.json`; to update it, copy a new
+run's `outputs/risk-dashboard.json` over that file.
+
+```bash
+python risk_summary.py outputs/hotspots-scored.csv outputs/hotspots-scoring-input.csv
+```
+
 ## Classification raster encoding
 
 Verified empirically (langur records fall on class 2; class 1 forms the
