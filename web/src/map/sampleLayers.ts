@@ -122,23 +122,52 @@ export const corridorSample: FeatureCollection = {
 
 // Threat points placed inside the coarsened habitat patches (Kim Bang, Cuc
 // Phuong, Van Long) so they read as pressures within suspected habitat.
+// `confidence` ('auto' | 'verified') structures the colour-system hook: auto
+// reads hatched/translucent; verify state ships later.
 export const driverSample: FeatureCollection = {
   type: 'FeatureCollection',
   features: [
     {
       type: 'Feature',
-      properties: { kind: 'quarry', label: 'Registered quarry (sample)' },
+      properties: { kind: 'quarry', confidence: 'auto', label: 'Registered quarry (sample)' },
       geometry: { type: 'Point', coordinates: [105.845, 20.52] },
     },
     {
       type: 'Feature',
-      properties: { kind: 'clearing', label: 'Suspected clearing (sample)' },
+      properties: { kind: 'clearing', confidence: 'auto', label: 'Suspected clearing (sample)' },
       geometry: { type: 'Point', coordinates: [105.6, 20.33] },
     },
     {
       type: 'Feature',
-      properties: { kind: 'clearing', label: 'Suspected clearing (sample)' },
+      properties: { kind: 'clearing', confidence: 'auto', label: 'Suspected clearing (sample)' },
       geometry: { type: 'Point', coordinates: [105.82, 20.42] },
+    },
+  ],
+}
+
+/**
+ * SAMPLE driver AREAS (polygons) for the hatched driver fills — synthetic, coarse
+ * shapes over the general region, NO real quarry/field boundaries (SECURITY.md).
+ * DEV-only demo surface for the colour system (hatch = auto/unverified confidence).
+ */
+export const driverAreaSample: FeatureCollection = {
+  type: 'FeatureCollection',
+  features: [
+    {
+      type: 'Feature',
+      properties: { kind: 'quarry', confidence: 'auto', label: 'Quarry footprint (sample, screening)' },
+      geometry: {
+        type: 'Polygon',
+        coordinates: [[[105.83, 20.53], [105.86, 20.535], [105.865, 20.515], [105.835, 20.51], [105.83, 20.53]]],
+      },
+    },
+    {
+      type: 'Feature',
+      properties: { kind: 'agriculture', confidence: 'auto', label: 'Cropland encroachment (sample, screening)' },
+      geometry: {
+        type: 'Polygon',
+        coordinates: [[[105.9, 20.46], [105.95, 20.47], [105.96, 20.43], [105.9, 20.42], [105.9, 20.46]]],
+      },
     },
   ],
 }

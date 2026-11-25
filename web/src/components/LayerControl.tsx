@@ -4,25 +4,36 @@ export interface LayerToggle {
   enabled: boolean
 }
 
+import { useState } from 'react'
+
 export interface LayerControlProps {
   layers: LayerToggle[]
   onToggle: (id: string) => void
 }
 
-/** Small overlay panel to toggle map layers on/off. */
+/** Small overlay panel to toggle map layers on/off. Collapsed to its label until
+ *  hovered, keyboard-focused, or the label is clicked (tap-friendly). */
 export default function LayerControl({ layers, onToggle }: LayerControlProps) {
+  const [open, setOpen] = useState(false)
   return (
-    <div className="absolute left-3 top-3 z-10 rounded-card border border-brd bg-card p-3 font-sans shadow-sm">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-secondary">Layers</p>
-      <ul className="space-y-1.5">
+    <div className="group absolute left-3 top-3 z-10 rounded-card border border-[#F8FAFC]/15 bg-[#0B1221]/90 px-2 py-1.5 font-sans shadow-sm">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="block cursor-pointer text-[9px] font-semibold uppercase tracking-wide text-[#CBD5E1]"
+      >
+        Layers
+      </button>
+      <ul className={`mt-1 space-y-0.5 group-hover:block group-focus-within:block ${open ? 'block' : 'hidden'}`}>
         {layers.map((layer) => (
           <li key={layer.id}>
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-ink">
+            <label className="flex cursor-pointer items-center gap-1.5 text-[11px] leading-tight text-[#F8FAFC]">
               <input
                 type="checkbox"
                 checked={layer.enabled}
                 onChange={() => onToggle(layer.id)}
-                className="h-4 w-4 accent-teal"
+                className="h-3 w-3 accent-teal"
               />
               {layer.label}
             </label>
