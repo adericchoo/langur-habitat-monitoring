@@ -7,27 +7,35 @@ per metric per study_area, plus an "All regions (overall)" rollup.
 
 SCREENING, NOT PROOF. A class transition is *suspected* loss, not field-verified.
 
-"Habitat" is the FOREST class for now, as a proxy, until the pipeline produces a
-dedicated langur-habitat class (which will overlap forest). When it lands, only
-HABITAT_CLASS below changes — the method is identical.
+"Habitat" is the KARST-FOREST class (class 2) of the v2 6-class legend — the
+dedicated langur-habitat class, confirmed from the GEE author's legend (no longer
+a forest proxy). The method is class-agnostic: only the CLASS_NAMES / HABITAT_CLASS
+/ driver map below encode the legend, so a legend change stays local to them.
 
 Inputs are LOCAL and gitignored (rasters + study-area geometry); the CSV output is
 aggregated (hectares + public area names) and is the publishable tier.
 
+Two tracks are produced (--target both, the default): HABITAT = karst forest
+(class 2 = langur habitat) and FOREST = plain forest (class 1). Each is written to
+its own CSV, {track}_loss_{ys}_{ye}.csv, under --outdir. 1<->2 (karst<->plain
+forest) transitions count as neither loss nor gain for either track, so the two
+numbers never contaminate each other.
+
 Usage (from repo root, inside the venv with requirements.txt installed):
     python -I pipeline/metrics/habitat_loss.py \
-        --r2017 docs/classification_2017.tif \
-        --r2025 docs/classification_2025.tif \
+        --r2017 docs/classification_v2_2017.tif \
+        --r2025 docs/classification_v2_2025.tif \
         --areas data/study_areas/habitat_areas.geojson \
-        --out   pipeline/metrics/outputs/habitat_loss_2017_2025.csv
+        --outdir pipeline/metrics/outputs            # --target habitat|forest|both
 Defaults match those paths, so bare `python -I pipeline/metrics/habitat_loss.py`
-works from the repo root.
+writes both tracks. The inputs are the single-band class extracts of the v2 GEE
+export (band 1, class 0 = nodata); not the raw multi-band langur_v2_*.tif.
 
 For a different pair of epochs, pass the rasters AND their years so the output is
 labelled correctly and loss_rate uses the right span:
     python -I pipeline/metrics/habitat_loss.py \
-        --r2017 docs/classification_2020.tif --year-start 2020 \
-        --r2025 docs/classification_2030.tif --year-end   2030
+        --r2017 docs/classification_v2_2020.tif --year-start 2020 \
+        --r2025 docs/classification_v2_2030.tif --year-end   2030
 The --r2017/--r2025 flag names are just the two input slots (start/end); the
 --year-* flags set what the data actually represents.
 """
@@ -45,32 +53,62 @@ from rasterio.warp import transform_geom
 
 # --- Configuration (domain calls — tune with SVW) ---------------------------
 
-CLASS_NAMES = {0: "background", 1: "quarry", 2: "forest", 3: "agriculture", 4: "urbanisation"}
+# v2 GEE export, confirmed 6-class discrete legend (band 1 of langur_v2_*, as
+# extracted to the single-band classification_v2_*.tif where class 0 = nodata).
+# Same legend the patch/corridor scripts use. NOTE: this is NOT the stale 4-class
+# scheme — class 2 is karst forest here, and quarry moved from 1 to 3.
+CLASS_NAMES = {
+    0: "nodata", 1: "forest", 2: "karst_forest", 3: "quarry",
+    4: "agriculture", 5: "urban", 6: "other",
+}
 
-# Which class counts as habitat. Forest proxy for now; swap to the dedicated
-# langur-habitat code when the pipeline emits it. Single source of truth.
-HABITAT_CLASS = 2
+# Two forest-type classes exist in the v2 legend: plain forest (1) and karst
+# forest (2). The script runs ONE per "track": HABITAT measures the karst-forest
+# class (2 = langur habitat, confirmed from the GEE author's legend), FOREST
+# measures plain forest (1). HABITAT_CLASS stays the default target so the existing
+# contract/metric names are unchanged.
+HABITAT_CLASS = 2   # karst forest = langur habitat — the 'habitat' track's target
+FOREST_CLASS = 1    # plain forest — the 'forest' track's target
+TRACKS = {"habitat": HABITAT_CLASS, "forest": FOREST_CLASS}
 
-# Destination class -> contract driver metric, when habitat converts to it.
-# forest->quarry = mining, forest->agriculture = farming, forest->urbanisation = other.
-DRIVER_OF_CLASS = {1: "driver_mining", 3: "driver_farming", 4: "driver_other"}
+# Both tree-cover classes. A transition BETWEEN them (1<->2) is just the fuzzy
+# karst/non-karst boundary being re-drawn between two cloudy snapshots — NOT a
+# durable change on the ground — and it churns both ways in near-equal volume. So
+# 1<->2 counts as neither loss nor gain for EITHER track: loss is only a forest
+# class converting to a HARD (non-forest) class, and gain is the reverse. This is
+# what keeps the forest (1) and habitat (2) numbers from contaminating each other.
+FOREST_CLASSES = {1, 2}
 
-# The quarry footprint metric reads this class's 2025 extent directly.
-QUARRY_CLASS = 1
+# Hard (non-forest) destination class -> contract driver metric. Only three drivers
+# exist in the contract, so: quarry=mining, agriculture=farming, urban + water/other
+# = other. Applies to both tracks (loss destinations are the same hard classes).
+DRIVER_OF_CLASS = {
+    3: "driver_mining",    # -> quarry
+    4: "driver_farming",   # -> agriculture
+    5: "driver_other",     # -> urban
+    6: "driver_other",     # -> other / water
+}
+
+# The quarry footprint metric reads this class's end-year extent directly.
+QUARRY_CLASS = 3
 
 YEAR_START, YEAR_END = 2017, 2025
 EDGE_DEPTH_M = 100  # core-habitat erosion depth; keep == fragmentation core_area
 
-BACKGROUND = 0  # mask / outside-AOI value, excluded from every metric
+BACKGROUND = 0  # nodata / outside-AOI value, excluded from every metric
 REAL_CLASSES = [c for c in CLASS_NAMES if c != BACKGROUND]
+# Durable loss/gain destinations: real classes that are NOT forest (so the sibling
+# forest class is automatically excluded for whichever track we run). == driver map.
+HARD_CLASSES = [c for c in REAL_CLASSES if c not in FOREST_CLASSES]
 
 LIMITATIONS = (
-    "Screening product: per-pixel class-transition estimate from 2017 and 2025 "
-    "land-cover rasters, not field-verified. Habitat = forest proxy (dedicated "
-    "langur-habitat class pending). habitat_lost is GROSS forest->non-forest; "
-    "forest regain is reported separately (forest_gain) and the smaller classes "
-    "carry classification noise, so gross loss over-states durable change. Two "
-    "epochs only, so loss_rate is a two-point rate with no trend."
+    "Screening product: per-pixel class-transition estimate from the 2017 and 2025 "
+    "v2 land-cover rasters (6-class), not field-verified. Habitat = karst forest "
+    "(class 2), the dedicated langur-habitat class. habitat_lost is GROSS "
+    "habitat->non-habitat (any other class, including karst-forest->forest); regain "
+    "is reported separately (forest_gain) and the smaller classes carry "
+    "classification noise, so gross loss over-states durable change. Two epochs "
+    "only, so loss_rate is a two-point rate with no trend."
 )
 
 OVERALL_NAME = "All regions (overall)"
@@ -105,11 +143,15 @@ def area_mask_for(geom_lonlat, ds):
                          transform=ds.transform, invert=True)
 
 
-def metrics_in_mask(a, b, mask, px_area_ha, pixel_m, years=YEAR_END - YEAR_START):
-    """All habitat-loss metrics for the pixels where `mask` is True.
+def metrics_in_mask(a, b, mask, px_area_ha, pixel_m, years=YEAR_END - YEAR_START,
+                    target=HABITAT_CLASS):
+    """All loss metrics for the forest class `target`, over the masked pixels.
 
-    a, b: 2D start / end class arrays. `years` is the span between the two
-    epochs and is the denominator of loss_rate. Returns a dict metric -> value.
+    a, b: 2D start / end class arrays. `years` is the span between the two epochs
+    and is the denominator of loss_rate. `target` is the forest class measured
+    (HABITAT_CLASS or FOREST_CLASS); the OTHER forest class is a sibling whose
+    1<->2 churn is excluded from loss and gain (see HARD_CLASSES). Returns a dict
+    metric -> value. Metric keys keep their contract names regardless of target.
     """
     av = a[mask].astype(np.int64)
     bv = b[mask].astype(np.int64)
@@ -118,28 +160,29 @@ def metrics_in_mask(a, b, mask, px_area_ha, pixel_m, years=YEAR_END - YEAR_START
     def c(i, j):  # pixels that went class i (2017) -> class j (2025)
         return int(counts[i * 10 + j])
 
-    H = HABITAT_CLASS
-    habitat_2017_px = sum(c(H, j) for j in REAL_CLASSES + [BACKGROUND])
-    habitat_2025_px = sum(c(i, H) for i in REAL_CLASSES + [BACKGROUND])
+    T = target
+    target_2017_px = sum(c(T, j) for j in REAL_CLASSES + [BACKGROUND])  # extent of T in 2017
+    target_2025_px = sum(c(i, T) for i in REAL_CLASSES + [BACKGROUND])  # extent of T in 2025
 
-    # Gross loss: habitat -> a different *real* class. Gain: real class -> habitat.
-    loss_by_dest = {d: c(H, d) for d in REAL_CLASSES if d != H}
+    # Durable loss: target -> a HARD (non-forest) class. Gain: hard class -> target.
+    # The sibling forest class is not in HARD_CLASSES, so 1<->2 is excluded both ways.
+    loss_by_dest = {d: c(T, d) for d in HARD_CLASSES}
     gross_loss_px = sum(loss_by_dest.values())
-    gain_px = sum(c(s, H) for s in REAL_CLASSES if s != H)
+    gain_px = sum(c(s, T) for s in HARD_CLASSES)
 
-    habitat_2017_ha = habitat_2017_px * px_area_ha
+    habitat_2017_ha = target_2017_px * px_area_ha
     lost_ha = gross_loss_px * px_area_ha
     loss_rate = (lost_ha / habitat_2017_ha / years * 100) if habitat_2017_ha > 0 else 0.0
 
     quarry_ha = sum(c(i, QUARRY_CLASS) for i in REAL_CLASSES + [BACKGROUND]) * px_area_ha
 
-    # core_habitat: erode the 2025 habitat patch inward by EDGE_DEPTH_M.
-    habitat_2025_2d = (b == H) & mask
+    # core_habitat: erode the 2025 target patch inward by EDGE_DEPTH_M.
+    habitat_2025_2d = (b == T) & mask
     iters = max(1, round(EDGE_DEPTH_M / pixel_m))
     core_px = int(binary_erosion(habitat_2025_2d, iters).sum())
 
     out = {
-        "habitat_remaining": round(habitat_2025_px * px_area_ha, 1),
+        "habitat_remaining": round(target_2025_px * px_area_ha, 1),
         "habitat_lost": round(lost_ha, 1),
         "loss_rate": round(loss_rate, 2),
         "quarry_footprint": round(quarry_ha, 1),
@@ -190,12 +233,67 @@ def rows_for(study_area, metrics, year_start, year_end, source_script):
         }
 
 
+CSV_COLS = ["metric", "value", "unit", "year_start", "year_end",
+            "study_area", "source_script", "limitations"]
+
+
+def _print_row(label, m):
+    print(f"{label:<26} {m['habitat_remaining']:>9,.0f} {m['habitat_lost']:>8,.0f} "
+          f"{m['loss_rate']:>6.2f} {m['quarry_footprint']:>7,.0f} "
+          f"{m['core_habitat']:>8,.0f} {m['forest_gain']:>8,.0f}  "
+          f"{m['driver_mining']:>3}/{m['driver_farming']:>3}/{m['driver_other']:>3}")
+
+
+def run_track(track, target, a, b, masks, union, px_area_ha, pixel_m,
+              years, year_start, year_end, out_path):
+    """Compute one track (habitat=class 2 or forest=class 1) for every study area
+    plus the union rollup, print the table, and write the contract CSV.
+
+    `masks` is [(name, bool mask)]; `union` is their OR. Returns the row count.
+    """
+    source_script = f"{track}_loss_{year_start}_{year_end}"
+    print(f"\n=== {track.upper()} track (target class {target} = "
+          f"{CLASS_NAMES[target]}) ===")
+    print(f"{'study_area':<26} {'remain':>9} {'lost':>8} {'rate':>6} "
+          f"{'quarry':>7} {'core':>8} {'gain':>8}  drivers(mine/farm/other)")
+
+    region_rows = []
+    for name, mask in masks:
+        m = metrics_in_mask(a, b, mask, px_area_ha, pixel_m, years, target=target)
+        region_rows.extend(rows_for(name, m, year_start, year_end, source_script))
+        _print_row(name, m)
+
+    overall = metrics_in_mask(a, b, union, px_area_ha, pixel_m, years, target=target)
+    _print_row(OVERALL_NAME, overall)
+    # "Overall" first, matching the frontend sample ordering.
+    all_rows = list(rows_for(OVERALL_NAME, overall, year_start, year_end, source_script)) + region_rows
+
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=CSV_COLS)
+        w.writeheader()
+        w.writerows(all_rows)
+    print(f"Wrote {len(all_rows)} rows -> {out_path}")
+
+    # Sibling JSON (same contract rows) for the frontend B4 loader (useMetricSites),
+    # mirroring fragmentation_metrics.py. Staged under web/public/data/ (gitignored).
+    json_out = os.path.splitext(out_path)[0] + ".json"
+    with open(json_out, "w", encoding="utf-8") as f:
+        json.dump(all_rows, f)
+    print(f"Wrote {len(all_rows)} rows -> {json_out}")
+    return len(all_rows)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--r2017", default="docs/classification_2017.tif")
-    ap.add_argument("--r2025", default="docs/classification_2025.tif")
+    ap.add_argument("--r2017", default="docs/classification_v2_2017.tif")
+    ap.add_argument("--r2025", default="docs/classification_v2_2025.tif")
     ap.add_argument("--areas", default="data/study_areas/habitat_areas.geojson")
-    ap.add_argument("--out", default="pipeline/metrics/outputs/habitat_loss_2017_2025.csv")
+    ap.add_argument("--target", choices=["habitat", "forest", "both"], default="both",
+                    help="which forest class to measure: habitat=karst forest "
+                         "(class 2), forest=plain forest (class 1), or both (default)")
+    ap.add_argument("--outdir", default="pipeline/metrics/outputs",
+                    help="directory for the per-track CSVs ({track}_loss_{ys}_{ye}.csv)")
     ap.add_argument("--year-start", type=int, default=YEAR_START,
                     help="epoch of --r2017; labels the output and sets the loss_rate denominator")
     ap.add_argument("--year-end", type=int, default=YEAR_END,
@@ -206,7 +304,7 @@ def main():
     if year_end <= year_start:
         raise SystemExit(f"--year-end ({year_end}) must be greater than --year-start ({year_start}).")
     years = year_end - year_start
-    source_script = f"habitat_loss_{year_start}_{year_end}"
+    tracks = list(TRACKS) if args.target == "both" else [args.target]
 
     with rasterio.open(args.r2017) as d17, rasterio.open(args.r2025) as d25:
         if (d17.crs != d25.crs or d17.transform != d25.transform
@@ -222,38 +320,17 @@ def main():
         with open(args.areas, encoding="utf-8") as f:
             features = json.load(f)["features"]
 
-        all_rows = []
+        # Build each study-area mask once; both tracks reuse them.
+        masks = [(feat["properties"]["name"], area_mask_for(feat["geometry"], ds))
+                 for feat in features]
         union = np.zeros((ds.height, ds.width), dtype=bool)
-        print(f"{'study_area':<26} {'remain':>9} {'lost':>8} {'rate':>6} "
-              f"{'quarry':>7} {'core':>8} {'gain':>8}  drivers(mine/farm/other)")
-        for feat in features:
-            name = feat["properties"]["name"]
-            mask = area_mask_for(feat["geometry"], ds)
+        for _, mask in masks:
             union |= mask
-            m = metrics_in_mask(a, b, mask, px_area_ha, pixel_m, years)
-            all_rows.extend(rows_for(name, m, year_start, year_end, source_script))
-            print(f"{name:<26} {m['habitat_remaining']:>9,.0f} {m['habitat_lost']:>8,.0f} "
-                  f"{m['loss_rate']:>6.2f} {m['quarry_footprint']:>7,.0f} "
-                  f"{m['core_habitat']:>8,.0f} {m['forest_gain']:>8,.0f}  "
-                  f"{m['driver_mining']:>3}/{m['driver_farming']:>3}/{m['driver_other']:>3}")
 
-        overall = metrics_in_mask(a, b, union, px_area_ha, pixel_m, years)
-        # "Overall" first, matching the frontend sample ordering.
-        all_rows = list(rows_for(OVERALL_NAME, overall, year_start, year_end, source_script)) + all_rows
-        print(f"{OVERALL_NAME:<26} {overall['habitat_remaining']:>9,.0f} "
-              f"{overall['habitat_lost']:>8,.0f} {overall['loss_rate']:>6.2f} "
-              f"{overall['quarry_footprint']:>7,.0f} {overall['core_habitat']:>8,.0f} "
-              f"{overall['forest_gain']:>8,.0f}  "
-              f"{overall['driver_mining']:>3}/{overall['driver_farming']:>3}/{overall['driver_other']:>3}")
-
-    os.makedirs(os.path.dirname(args.out), exist_ok=True)
-    cols = ["metric", "value", "unit", "year_start", "year_end",
-            "study_area", "source_script", "limitations"]
-    with open(args.out, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=cols)
-        w.writeheader()
-        w.writerows(all_rows)
-    print(f"\nWrote {len(all_rows)} rows -> {args.out}")
+        for track in tracks:
+            out_path = os.path.join(args.outdir, f"{track}_loss_{year_start}_{year_end}.csv")
+            run_track(track, TRACKS[track], a, b, masks, union, px_area_ha,
+                      pixel_m, years, year_start, year_end, out_path)
 
 
 if __name__ == "__main__":
