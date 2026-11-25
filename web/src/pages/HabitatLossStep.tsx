@@ -4,30 +4,32 @@ import type { MapYearContext } from '../App'
 import Sidebar from '../components/Sidebar'
 import MetricCard, { type MetricCardVariant } from '../components/MetricCard'
 import { usePins } from '../report/pins'
+import { useMetricSites } from '../report/metrics'
 import { habitatLossSites } from '../samples/habitatLoss'
-import type { HabitatLossSite } from '../types/contract'
+import type { MetricSite } from '../types/contract'
 import { useCompare } from '../compare/CompareContext'
 import CompareDashboard from '../compare/CompareDashboard'
-import LayerSection, { HabitatPending } from '../components/LayerSection'
+import LayerSection, { type HabitatLayer } from '../components/LayerSection'
 
 interface CardSpec {
   key: string
   metric: string
-  label: string
+  /** Label + caption take the layer noun ('Habitat' | 'Forest') so the same spec
+   *  renders both tracks; the time window comes from the data (year_start…year). */
+  label: (noun: string) => string
   variant?: MetricCardVariant
-  /** Caption string, or a builder that takes the selected display year. */
-  caption?: string | ((year: number) => string)
+  caption?: (noun: string, year: number, yearStart: number) => string
 }
 
 // Which metrics become cards, in order, with their look + a screening-grade note.
-// Captions that carry a time reference take the selected year. Net loss also
-// shows a % of the 2000 baseline (computed in the render).
+// `noun` is the layer ('Habitat' or 'Forest'); the window is read from the data so
+// captions show the real epoch span (2017–…), not a hard-coded baseline.
 const CARD_SPECS: CardSpec[] = [
-  { key: 'remaining', metric: 'habitat_remaining', label: 'Habitat area remaining', variant: 'featured', caption: (y) => `suspected extent, ${y} (screening)` },
-  { key: 'lost', metric: 'habitat_lost', label: 'Forest cleared since 2000', caption: (y) => `class transition, 2000–${y}` },
-  { key: 'gain', metric: 'forest_gain', label: 'Forest regained', caption: 'non-forest → forest (screening)' },
-  { key: 'rate', metric: 'loss_rate', label: 'Annual loss rate', variant: 'accent', caption: (y) => `2000–${y} mean (screening)` },
-  { key: 'quarry', metric: 'quarry_footprint', label: 'Quarry footprint', caption: (y) => `registered extent, ${y} (sample)` },
+  { key: 'remaining', metric: 'habitat_remaining', label: (n) => `${n} area remaining`, variant: 'featured', caption: (_n, y) => `suspected extent, ${y} (screening)` },
+  { key: 'lost', metric: 'habitat_lost', label: (n) => `${n} cleared`, caption: (_n, y, ys) => `class transition, ${ys}–${y}` },
+  { key: 'gain', metric: 'forest_gain', label: (n) => `${n} regained`, caption: (n) => `non-${n.toLowerCase()} → ${n.toLowerCase()} (screening)` },
+  { key: 'rate', metric: 'loss_rate', label: () => 'Annual loss rate', variant: 'accent', caption: (_n, y, ys) => `${ys}–${y} mean (screening)` },
+  { key: 'quarry', metric: 'quarry_footprint', label: () => 'Quarry footprint', caption: (_n, y) => `registered extent, ${y} (screening)` },
 ]
 
 const DRIVERS = [
@@ -39,9 +41,16 @@ const DRIVERS = [
 const fmt = (value: number) =>
   Number.isInteger(value) ? value.toLocaleString('en-US') : String(value)
 
-/** Step 01 — Habitat loss. Loss metric cards for a selected site; pins are
- *  local to this step for D1 (H1 lifts them to a shared store). */
+/** Step 01 — Habitat loss. Two real pipeline tracks (habitat_loss.py), one per
+ *  LayerSection: FOREST = plain-forest class (1), HABITAT = karst-forest class (2
+ *  = langur habitat). Both load via the B4 loader from web/public/data/ (gitignored,
+ *  aggregated tier), falling back to the sample until staged. Pins are local to
+ *  this step for D1 (H1 lifts them to a shared store). */
 export default function HabitatLossStep() {
+  // One MetricSite[] per track; same study areas (same slugged ids) in each, so a
+  // single siteId indexes both. Sample fallback until the JSONs are staged.
+  const forestSites = useMetricSites('/data/forest_loss.json', habitatLossSites)
+  const habitatSites = useMetricSites('/data/habitat_loss.json', habitatLossSites)
   const [siteId, setSiteId] = useState(habitatLossSites[0].id)
   // Year is shared with the map (via App's Outlet context) so the selector below
   // also switches the satellite basemap to the nearest available year.
@@ -49,17 +58,15 @@ export default function HabitatLossStep() {
   const { isPinned, toggle, count } = usePins()
   const { compareOn, baselineYear, currentYear } = useCompare()
 
-  const site: HabitatLossSite =
-    habitatLossSites.find((s) => s.id === siteId) ?? habitatLossSites[0]
+  // Resolve the selection in each track; when a data source swaps (sample → real)
+  // the old id may not exist, so fall back to the first site (the overall rollup).
+  const habitatSite: MetricSite = habitatSites.find((s) => s.id === siteId) ?? habitatSites[0]
+  const forestSite: MetricSite = forestSites.find((s) => s.id === habitatSite.id) ?? forestSites[0]
 
   // Available display years span the loss window (year_start…year_end), newest first.
-  const yearStart = site.metrics[0]?.year_start ?? 2000
-  const yearEnd = site.metrics[0]?.year_end ?? 2026
+  const yearStart = habitatSite.metrics[0]?.year_start ?? 2017
+  const yearEnd = habitatSite.metrics[0]?.year_end ?? 2025
   const years = Array.from({ length: yearEnd - yearStart + 1 }, (_, i) => yearEnd - i)
-
-  const valueOf = (metric: string) => site.metrics.find((x) => x.metric === metric)
-
-  const drivers = DRIVERS.map((d) => ({ label: d.label, pct: valueOf(d.metric)?.value ?? 0 }))
 
   return (
     <Sidebar
@@ -99,11 +106,12 @@ export default function HabitatLossStep() {
       ) : (
         <SingleYearBody
           year={year}
-          site={site}
-          siteId={siteId}
+          yearStart={yearStart}
+          sites={habitatSites}
+          selectedId={habitatSite.id}
           setSiteId={setSiteId}
-          valueOf={valueOf}
-          drivers={drivers}
+          forestSite={forestSite}
+          habitatSite={habitatSite}
           isPinned={isPinned}
           toggle={toggle}
         />
@@ -114,20 +122,22 @@ export default function HabitatLossStep() {
 
 function SingleYearBody({
   year,
-  site,
-  siteId,
+  yearStart,
+  sites,
+  selectedId,
   setSiteId,
-  valueOf,
-  drivers,
+  forestSite,
+  habitatSite,
   isPinned,
   toggle,
 }: {
   year: number
-  site: HabitatLossSite
-  siteId: string
+  yearStart: number
+  sites: MetricSite[]
+  selectedId: string
   setSiteId: (id: string) => void
-  valueOf: (metric: string) => HabitatLossSite['metrics'][number] | undefined
-  drivers: { label: string; pct: number }[]
+  forestSite: MetricSite
+  habitatSite: MetricSite
   isPinned: (id: string) => boolean
   toggle: ReturnType<typeof usePins>['toggle']
 }) {
@@ -138,11 +148,11 @@ function SingleYearBody({
           Site
         </span>
         <select
-          value={siteId}
+          value={selectedId}
           onChange={(e) => setSiteId(e.target.value)}
           className="w-full rounded-pill border border-brd bg-card px-3 py-1.5 text-sm text-ink"
         >
-          {habitatLossSites.map((s) => (
+          {sites.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
             </option>
@@ -152,52 +162,27 @@ function SingleYearBody({
 
       <div className="space-y-4">
         <LayerSection layer="forest">
-          <div className="space-y-3">
-            {CARD_SPECS.map((spec) => {
-          const metricRow = valueOf(spec.metric)
-          if (!metricRow) return null
-          const id = `habitat-loss:${site.id}:${spec.key}`
-          const caption = typeof spec.caption === 'function' ? spec.caption(year) : spec.caption
-          // Net loss also as a % of the 2000 baseline (remaining + lost = extent
-          // at 2000). Shown on the delta line; falls back to the caption otherwise.
-          let delta: string | undefined
-          if (spec.key === 'lost') {
-            const baseline2000 = (valueOf('habitat_remaining')?.value ?? 0) + metricRow.value
-            if (baseline2000 > 0) {
-              delta = `−${Math.round((metricRow.value / baseline2000) * 100)}% of 2000`
-            }
-          }
-          return (
-            <MetricCard
-              key={spec.key}
-              variant={spec.variant}
-              label={spec.label}
-              value={fmt(metricRow.value)}
-              unit={metricRow.unit}
-              delta={delta}
-              trend={delta ? 'down' : undefined}
-              caption={caption}
-              pinned={isPinned(id)}
-              onTogglePin={() =>
-                toggle({
-                  id,
-                  step: 'habitat-loss',
-                  label: spec.label,
-                  value: fmt(metricRow.value),
-                  unit: metricRow.unit,
-                  detail: site.name,
-                })
-              }
-            />
-          )
-        })}
-
-            <DriverBreakdown drivers={drivers} />
-          </div>
+          <LayerMetrics
+            layer="forest"
+            noun="Forest"
+            site={forestSite}
+            year={year}
+            yearStart={yearStart}
+            isPinned={isPinned}
+            toggle={toggle}
+          />
         </LayerSection>
 
         <LayerSection layer="habitat">
-          <HabitatPending />
+          <LayerMetrics
+            layer="habitat"
+            noun="Habitat"
+            site={habitatSite}
+            year={year}
+            yearStart={yearStart}
+            isPinned={isPinned}
+            toggle={toggle}
+          />
         </LayerSection>
       </div>
 
@@ -205,6 +190,76 @@ function SingleYearBody({
         Pinned figures carry into Step 05 · Report. Screening product — not confirmed loss.
       </p>
     </>
+  )
+}
+
+/** The metric cards + driver breakdown for one track (forest or habitat), read
+ *  from that track's selected study area. */
+function LayerMetrics({
+  layer,
+  noun,
+  site,
+  year,
+  yearStart,
+  isPinned,
+  toggle,
+}: {
+  layer: HabitatLayer
+  noun: string
+  site: MetricSite
+  year: number
+  yearStart: number
+  isPinned: (id: string) => boolean
+  toggle: ReturnType<typeof usePins>['toggle']
+}) {
+  const valueOf = (metric: string) => site.metrics.find((x) => x.metric === metric)
+  const drivers = DRIVERS.map((d) => ({ label: d.label, pct: valueOf(d.metric)?.value ?? 0 }))
+
+  return (
+    <div className="space-y-3">
+      {CARD_SPECS.map((spec) => {
+        const metricRow = valueOf(spec.metric)
+        if (!metricRow) return null
+        // Namespaced by layer so the forest + habitat cards never share a pin id.
+        const id = `habitat-loss:${layer}:${site.id}:${spec.key}`
+        const label = spec.label(noun)
+        const caption = spec.caption?.(noun, year, yearStart)
+        // Net loss also as a % of the start-year extent (remaining + lost = extent
+        // at year_start). Shown on the delta line; falls back to the caption otherwise.
+        let delta: string | undefined
+        if (spec.key === 'lost') {
+          const baseline = (valueOf('habitat_remaining')?.value ?? 0) + metricRow.value
+          if (baseline > 0) {
+            delta = `−${Math.round((metricRow.value / baseline) * 100)}% of ${yearStart}`
+          }
+        }
+        return (
+          <MetricCard
+            key={spec.key}
+            variant={spec.variant}
+            label={label}
+            value={fmt(metricRow.value)}
+            unit={metricRow.unit}
+            delta={delta}
+            trend={delta ? 'down' : undefined}
+            caption={caption}
+            pinned={isPinned(id)}
+            onTogglePin={() =>
+              toggle({
+                id,
+                step: 'habitat-loss',
+                label,
+                value: fmt(metricRow.value),
+                unit: metricRow.unit,
+                detail: `${noun} · ${site.name}`,
+              })
+            }
+          />
+        )
+      })}
+
+      <DriverBreakdown drivers={drivers} />
+    </div>
   )
 }
 
