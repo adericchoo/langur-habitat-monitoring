@@ -120,7 +120,16 @@ export const corridorLineFor = (
 // structured now so wiring verification is a one-line change at the call site.
 export const driverFill = (
   kind: DriverKind,
-  { confidence = 'auto' as DriverConfidence }: { confidence?: DriverConfidence } = {},
+  {
+    confidence = 'auto' as DriverConfidence,
+    opacity,
+  }: {
+    confidence?: DriverConfidence
+    /** Overrides the hatched fill-opacity — a constant or a MapLibre expression, so
+     *  callers can drive opacity per feature from auto-confidence. Ignored once a
+     *  feature is `verified` (then the fill is solid + opaque). */
+    opacity?: number | unknown[]
+  } = {},
 ): LayerProps => {
   const base = DRIVER_FILL_OPACITY[kind]
   return {
@@ -129,7 +138,7 @@ export const driverFill = (
     paint:
       confidence === 'verified'
         ? { 'fill-color': DRIVER_COLOR[kind], 'fill-opacity': Math.min(1, base + 0.3) }
-        : { 'fill-pattern': DRIVER_HATCH_ID[kind], 'fill-opacity': base },
+        : { 'fill-pattern': DRIVER_HATCH_ID[kind], 'fill-opacity': (opacity ?? base) as number },
   }
 }
 
