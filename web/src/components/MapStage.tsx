@@ -20,18 +20,20 @@ import {
   habitatFill,
   habitatOutline,
   corridorLineFor,
-  driverFill,
-  driverOutline,
   alertPoint,
   labelSymbol,
 } from '../map/layers'
-import { CORRIDOR_STATUSES, DRIVER_HATCH_ID, DRIVER_COLOR } from '../map/mapTokens'
+import { CORRIDOR_STATUSES, DRIVER_HATCH_ID, DRIVER_COLOR, type DriverKind } from '../map/mapTokens'
 import { WORLD_RECT, regionHitFill, spotlightFromGeometry } from '../map/spotlight'
 import { ensureHatchImage } from '../map/hatch'
-import { driverAreaSample, driverSample } from '../map/sampleLayers'
+import { driverSample } from '../map/sampleLayers'
 import { useDevPatches } from '../map/useDevPatches'
 import { useDevCorridors } from '../map/useDevCorridors'
 import { useDevStudyAreas } from '../map/useDevStudyAreas'
+import { useRegion } from '../regions/RegionContext'
+import { useDrivers, scopeDriverBlobs } from '../map/useDrivers'
+import DriverLayers from './DriverLayers'
+import DriverControls, { type DriverDisplayStatus } from './DriverControls'
 // NOTE: the habitat-extent polygons were removed from this repo (data + full git
 // history) as a precaution — even coarsened karst outlines are not published in
 // the public bundle. So in PRODUCTION this map shows only satellite + scrim +
@@ -56,7 +58,7 @@ export interface MapStageProps {
   year?: number
 }
 
-export default function MapStage({ year }: MapStageProps) {
+export default function MapStage({ activeStep, year }: MapStageProps) {
   const baseYear = resolveBasemapYear(year ?? LATEST_BASEMAP_YEAR)
   const basemapTiles = BASEMAP_TILES_BY_YEAR[baseYear]
   // DEV-ONLY overlays — sensitive pipeline outputs loaded at runtime from the
@@ -64,6 +66,18 @@ export default function MapStage({ year }: MapStageProps) {
   const devPatches = useDevPatches()
   const devCorridors = useDevCorridors()
   const devStudyAreas = useDevStudyAreas()
+
+  // Driver blobs (Step 01) — the spatial "loss by driver". Scoped to the active
+  // region (Step Zero); the client only renders the pipeline's GeoJSON.
+  const onHabitatLoss = activeStep === 'habitat-loss'
+  // The shared Step-Zero region (distinct from the DEV click-to-focus region below).
+  const { activeRegion: region } = useRegion()
+  const drivers = useDrivers()
+  const [driverEnabled, setDriverEnabled] = useState<Record<DriverKind, boolean>>({
+    quarry: true,
+    agriculture: true,
+  })
+  const [minHa, setMinHa] = useState(25)
 
   const [layers, setLayers] = useState<LayerToggle[]>(() => [
     { id: 'satellite', label: 'Satellite', enabled: true },
@@ -74,7 +88,6 @@ export default function MapStage({ year }: MapStageProps) {
           { id: 'study-areas', label: 'Regions', enabled: true },
           { id: 'patches', label: 'Habitat patches', enabled: true },
           { id: 'corridors-dev', label: 'Habitat corridors', enabled: true },
-          { id: 'drivers', label: 'Drivers (sample)', enabled: true },
           { id: 'alerts', label: 'Alerts (sample)', enabled: false },
           { id: 'cb-dashed', label: 'Colour-blind: dashed status', enabled: false },
         ]
@@ -82,15 +95,42 @@ export default function MapStage({ year }: MapStageProps) {
   ])
 
   const isOn = (id: string) => layers.find((l) => l.id === id)?.enabled ?? false
-  const toggle = (id: string) =>
+  const toggle = (id: string) => {
+    if (id === 'quarry' || id === 'agriculture') {
+      setDriverEnabled((prev) => ({ ...prev, [id]: !prev[id] }))
+      return
+    }
     setLayers((prev) => prev.map((l) => (l.id === id ? { ...l, enabled: !l.enabled } : l)))
+  }
+
+  // Blobs in the active region (the "empty" state keys off this, pre-filter), then
+  // the visible set (min-area declutter + enabled drivers) that actually renders.
+  const scopedBlobs = useMemo(
+    () => (onHabitatLoss ? scopeDriverBlobs(drivers.blobs, region) : []),
+    [onHabitatLoss, drivers.blobs, region],
+  )
+  const visibleBlobs = useMemo(
+    () => scopedBlobs.filter((b) => b.properties.areaHa >= minHa && driverEnabled[b.properties.driver]),
+    [scopedBlobs, minHa, driverEnabled],
+  )
+  const driverStatus: DriverDisplayStatus =
+    drivers.status === 'loading'
+      ? 'loading'
+      : scopedBlobs.length === 0
+        ? 'empty'
+        : drivers.status === 'stale'
+          ? 'stale'
+          : drivers.status === 'error'
+            ? 'error'
+            : 'ready'
 
   // Scrim raises when any analysis layer (anything beyond satellite + scrim) is on,
   // so the overlays pop against a darker base.
   const analysisOn =
     isOn('pa') ||
+    (onHabitatLoss && visibleBlobs.length > 0) ||
     (import.meta.env.DEV &&
-      (isOn('study-areas') || isOn('patches') || isOn('corridors-dev') || isOn('drivers') || isOn('alerts')))
+      (isOn('study-areas') || isOn('patches') || isOn('corridors-dev') || isOn('alerts')))
 
   // Active region (click to focus) → white outline + a spotlight dimming outside it.
   const [activeRegion, setActiveRegion] = useState<string | null>(null)
@@ -130,7 +170,7 @@ export default function MapStage({ year }: MapStageProps) {
     isOn('pa') ? 'pa' : null,
     import.meta.env.DEV && isOn('patches') ? 'habitat' : null,
     import.meta.env.DEV && isOn('corridors-dev') ? 'corridors' : null,
-    import.meta.env.DEV && isOn('drivers') ? 'drivers' : null,
+    onHabitatLoss && (driverEnabled.quarry || driverEnabled.agriculture) ? 'drivers' : null,
     import.meta.env.DEV && isOn('alerts') ? 'alert' : null,
   ].filter(Boolean) as string[]
 
@@ -189,15 +229,6 @@ export default function MapStage({ year }: MapStageProps) {
           </Source>
         )}
 
-        {/* DEV-ONLY: driver areas as hatched fills (hatch = auto/unverified). */}
-        {import.meta.env.DEV && isOn('drivers') && (
-          <Source id="drivers" type="geojson" data={driverAreaSample}>
-            <Layer {...{ ...driverFill('agriculture'), filter: ['==', ['get', 'kind'], 'agriculture'] }} />
-            <Layer {...{ ...driverFill('quarry'), filter: ['==', ['get', 'kind'], 'quarry'] }} />
-            <Layer {...{ ...driverOutline('quarry'), filter: ['==', ['get', 'kind'], 'quarry'] }} />
-          </Source>
-        )}
-
         {/* Protected areas — dashed cyan line, reference context. */}
         {isOn('pa') && (
           <Source id="pa" type="geojson" data={protectedAreas}>
@@ -230,17 +261,35 @@ export default function MapStage({ year }: MapStageProps) {
           </Source>
         )}
 
-        {/* DEV-ONLY: alert points (auto-detected clearing flags), topmost. */}
+        {/* DEV-ONLY: alert points (screening clearing flags), topmost. */}
         {import.meta.env.DEV && isOn('alerts') && (
           <Source id="alerts" type="geojson" data={driverSample}>
             <Layer {...{ ...alertPoint(), filter: ['==', ['get', 'kind'], 'clearing'] }} />
           </Source>
         )}
+
+        {/* Step 01 · Habitat loss — driver blobs (quarry / agriculture), scoped to
+            the active region, above the min-area highlight, enabled drivers only. */}
+        {onHabitatLoss && <DriverLayers blobs={visibleBlobs} />}
       </Map>
 
       <LayerControl
-        layers={layers.map((l) => (l.id === 'satellite' ? { ...l, label: `Satellite ${baseYear}` } : l))}
+        layers={[
+          ...layers.map((l) => (l.id === 'satellite' ? { ...l, label: `Satellite ${baseYear}` } : l)),
+          // Driver toggles only on Step 01, defaulting on.
+          ...(onHabitatLoss
+            ? [
+                { id: 'quarry', label: 'Quarry (drivers)', enabled: driverEnabled.quarry },
+                { id: 'agriculture', label: 'Agriculture (drivers)', enabled: driverEnabled.agriculture },
+              ]
+            : []),
+        ]}
         onToggle={toggle}
+        footer={
+          onHabitatLoss ? (
+            <DriverControls minHa={minHa} onMinHa={setMinHa} status={driverStatus} count={scopedBlobs.length} />
+          ) : undefined
+        }
       />
 
       {/* Token-driven legend; shows only the groups whose layers are on. */}

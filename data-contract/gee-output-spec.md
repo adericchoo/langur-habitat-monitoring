@@ -68,12 +68,38 @@ legend key on a single property; emit that property with exactly these values:
 | --- | --- | --- |
 | Habitat | Polygon | — (rendered as one class) |
 | Protected areas | Polygon | — |
-| Drivers | Point | `kind` → `quarry`, `clearing` |
+| Driver blobs | Polygon | `driver` → `quarry`, `agriculture` (see below) |
+| Alerts (points) | Point | `kind` → `quarry`, `clearing` |
 | Corridors | LineString | `status` → `intact`, `partial`, `lost` |
 | Habitat risk | Polygon | `riskLevel` → `high`, `med`, `low` |
 
 A `label` string property on each feature is used for captions; keep it
 public-safe (no precise place names that imply exact locations).
+
+### Driver blobs — `/data/drivers.json` (Step 01 · Habitat loss)
+
+The spatial version of the "loss by driver" sidebar. The pipeline groups driver
+pixels into blobs, attributes each to a region, and scores an auto-confidence
+(the P1–P6 patch pipeline retargeted); the frontend ONLY renders the resulting
+GeoJSON — no client-side grouping. Geometry is **coarsened**, never a precise
+threat location (SECURITY.md). A `FeatureCollection` of `Polygon` features, each
+with these properties (the frontend keys on them; see `web/src/types/drivers.ts`):
+
+| property | type | notes |
+| --- | --- | --- |
+| `id` | string | stable blob id |
+| `driver` | `quarry` \| `agriculture` | paint + toggle key |
+| `areaHa` | number | current extent (ha) |
+| `deltaHa` | number | growth over the window (ha), e.g. `+38` |
+| `window` | `[number, number]` | `[startYear, endYear]` |
+| `confidence` | `{ score: number; label: 'High'\|'Moderate'\|'Low' }` | auto-confidence (0–1 + band) |
+| `verified` | boolean | always `false` for now — the seam for a future "verified = solid fill" state |
+| `regionId` | string | attributed region (matches the summary `study_area` region id) |
+
+Screening product: a blob is an auto-flagged footprint, **not** a confirmed or
+field-verified site. Confidence maps to fill opacity; a min-area HIGHLIGHT is a
+display-only declutter and must NOT change the sidebar driver %, which is computed
+from the `driver_mining/farming/other` summary rows, not these blobs.
 
 ### Classification ownership (open decision)
 
