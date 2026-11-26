@@ -55,7 +55,6 @@ export default function FragmentationStep() {
 
   return (
     <Sidebar
-      eyebrow="Northern Vietnam · Kim Bang"
       title="Fragmentation"
       subtitle={
         <span className="flex flex-wrap items-center gap-1.5">

@@ -1,4 +1,5 @@
 import type { HabitatLossSite, SummaryMetric } from '../types/contract'
+import { REGIONS } from '../regions/registry'
 
 /**
  * SAMPLE tier only — synthetic figures shaped to the summary contract
@@ -58,16 +59,25 @@ const makeSite = (s: RegionSpec): HabitatLossSite => ({
   ],
 })
 
-// The per-region samples. The "Overall" study area is derived from these.
-const regionalSites: HabitatLossSite[] = [
-  { id: 'pu-luong', name: 'Pu Luong Karst (sample)', remaining: 12409, lost: 1840, rate: 0.7, quarry: 180, core: 7200, gain: 260, mining: 28, farming: 52, other: 20 },
-  { id: 'cuc-phuong', name: 'Cuc Phuong (sample)', remaining: 22346, lost: 920, rate: 0.3, quarry: 60, core: 15800, gain: 410, mining: 12, farming: 61, other: 27 },
-  { id: 'hoa-lu-trang-an', name: 'Hoa Lu / Trang An (sample)', remaining: 6181, lost: 1320, rate: 1.1, quarry: 95, core: 3100, gain: 180, mining: 22, farming: 45, other: 33 },
-  { id: 'tam-diep', name: 'Tam Diep (sample)', remaining: 3938, lost: 1510, rate: 1.6, quarry: 540, core: 1500, gain: 90, mining: 58, farming: 29, other: 13 },
-  { id: 'huong-son-lac-thuy', name: 'Huong Son – Lac Thuy (sample)', remaining: 5644, lost: 1180, rate: 1.0, quarry: 320, core: 2600, gain: 150, mining: 47, farming: 36, other: 17 },
-  { id: 'kim-bang', name: 'Kim Bang (sample)', remaining: 2416, lost: 1870, rate: 2.1, quarry: 610, core: 980, gain: 70, mining: 63, farming: 24, other: 13 },
-  { id: 'van-long-dong-tam', name: 'Van Long NR – Dong Tam (sample)', remaining: 4281, lost: 760, rate: 0.6, quarry: 140, core: 2400, gain: 220, mining: 31, farming: 48, other: 21 },
-].map(makeSite)
+// Per-region loss figures, keyed by the shared region id. `id` / `name` / the
+// `remaining` extent come from the canonical registry (regions/registry.ts), so
+// these sites join to the same regions the picker and map use; only the
+// illustrative loss figures live here. The "Overall" study area is derived below.
+type LossFigures = Omit<RegionSpec, 'id' | 'name' | 'remaining'>
+
+const LOSS_BY_ID: Record<string, LossFigures> = {
+  'pu-luong': { lost: 1840, rate: 0.7, quarry: 180, core: 7200, gain: 260, mining: 28, farming: 52, other: 20 },
+  'cuc-phuong': { lost: 920, rate: 0.3, quarry: 60, core: 15800, gain: 410, mining: 12, farming: 61, other: 27 },
+  'hoa-lu-trang-an': { lost: 1320, rate: 1.1, quarry: 95, core: 3100, gain: 180, mining: 22, farming: 45, other: 33 },
+  'tam-diep': { lost: 1510, rate: 1.6, quarry: 540, core: 1500, gain: 90, mining: 58, farming: 29, other: 13 },
+  'huong-son-lac-thuy': { lost: 1180, rate: 1.0, quarry: 320, core: 2600, gain: 150, mining: 47, farming: 36, other: 17 },
+  'kim-bang': { lost: 1870, rate: 2.1, quarry: 610, core: 980, gain: 70, mining: 63, farming: 24, other: 13 },
+  'van-long-dong-tam': { lost: 760, rate: 0.6, quarry: 140, core: 2400, gain: 220, mining: 31, farming: 48, other: 21 },
+}
+
+const regionalSites: HabitatLossSite[] = REGIONS.map((r) =>
+  makeSite({ id: r.id, name: `${r.name} (sample)`, remaining: r.area_ha, ...LOSS_BY_ID[r.id] }),
+)
 
 const OVERALL_NAME = 'All regions (overall)'
 

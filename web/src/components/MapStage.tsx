@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import type { FeatureCollection, Geometry, Position } from 'geojson'
+import type { FeatureCollection } from 'geojson'
 import Map, { Layer, Source, type MapLayerMouseEvent, type MapEvent } from 'react-map-gl/maplibre'
 import LayerControl, { type LayerToggle } from './LayerControl'
 import MapLegendCanvas from './MapLegendCanvas'
@@ -26,6 +26,7 @@ import {
   labelSymbol,
 } from '../map/layers'
 import { CORRIDOR_STATUSES, DRIVER_HATCH_ID, DRIVER_COLOR } from '../map/mapTokens'
+import { WORLD_RECT, regionHitFill, spotlightFromGeometry } from '../map/spotlight'
 import { ensureHatchImage } from '../map/hatch'
 import { driverAreaSample, driverSample } from '../map/sampleLayers'
 import { useDevPatches } from '../map/useDevPatches'
@@ -42,30 +43,6 @@ import { useDevStudyAreas } from '../map/useDevStudyAreas'
 // reference data. Coarsened to 0.001° on export (see protectedAreas.json).
 import protectedAreasJson from '../map/protectedAreas.json'
 const protectedAreas = protectedAreasJson as FeatureCollection
-
-// Full-extent rectangle the scrim fill paints over (a plain world ring).
-const WORLD_RING: Position[] = [
-  [-180, -85],
-  [180, -85],
-  [180, 85],
-  [-180, 85],
-  [-180, -85],
-]
-const WORLD_RECT: FeatureCollection = {
-  type: 'FeatureCollection',
-  features: [{ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [WORLD_RING] } }],
-}
-
-// Transparent hit target so the thin region outlines are clickable (spec: "no fill").
-const regionHitFill = { id: 'region-hit', type: 'fill' as const, paint: { 'fill-opacity': 0 } }
-
-/** Outer rings of a Polygon/MultiPolygon, used as holes to punch the active region
- *  out of the scrim rectangle (the spotlight). */
-function outerRings(geom: Geometry): Position[][] {
-  if (geom.type === 'Polygon') return [geom.coordinates[0]]
-  if (geom.type === 'MultiPolygon') return geom.coordinates.map((poly) => poly[0])
-  return []
-}
 
 /**
  * Map stage — a 2025 Sentinel-2 true-colour basemap over the demotiles style,
@@ -144,11 +121,7 @@ export default function MapStage({ year }: MapStageProps) {
     if (!activeRegion || !devStudyAreas) return null
     const feat = devStudyAreas.features.find((f) => f.properties?.name === activeRegion)
     if (!feat) return null
-    const holes = outerRings(feat.geometry)
-    return {
-      type: 'FeatureCollection',
-      features: [{ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [WORLD_RING, ...holes] } }],
-    }
+    return spotlightFromGeometry(feat.geometry)
   }, [activeRegion, devStudyAreas])
 
   // Which legend groups to show, from the active toggles.

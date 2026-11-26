@@ -47,7 +47,6 @@ export default function PolicyStep() {
 
   return (
     <Sidebar
-      eyebrow="Northern Vietnam · Kim Bang"
       title="Policy"
       subtitle="interventions matched to detected drivers · sample bank"
       headerAction={

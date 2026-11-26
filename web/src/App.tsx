@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import MapStage from './components/MapStage'
 import CompareMap from './components/CompareMap'
 import Stepper from './components/Stepper'
+import RegionTopBar from './components/RegionTopBar'
 import { PinProvider } from './report/pins'
 import { CompareProvider, useCompare, stepSupportsCompare } from './compare/CompareContext'
+import { useRegion } from './regions/RegionContext'
 import { STEPS } from './steps'
 import logoUrl from './Assets/Logo Suite_Ai for Good_edited.png'
 
@@ -34,6 +36,10 @@ function AppShell() {
   const { pathname } = useLocation()
   const activeSlug = pathname.replace(/^\//, '') || STEPS[0].slug
 
+  // Steps 01–05 are gated on an active region (bounce to Step Zero if absent).
+  // Read before the early return below — all hooks run first (Rules of Hooks).
+  const { activeRegion } = useRegion()
+
   // Default to the latest year; the Habitat loss step's year selector updates it.
   const [mapYear, setMapYear] = useState(2025)
   // Compare mode swaps the single-year map for the split map, but only on the
@@ -46,8 +52,12 @@ function AppShell() {
 
   const logo = <img src={logoUrl} alt="AI for Good" className="h-6 w-auto" />
 
+  // Deep-linked here without a region → back to Step Zero. (After all hooks.)
+  if (!activeRegion) return <Navigate to="/set-region" replace />
+
   return (
     <div className="flex h-full flex-col">
+      <RegionTopBar />
       <div className="flex min-h-0 flex-1">
         <main className="min-w-0 flex-1">
           {compareActive ? (

@@ -67,7 +67,6 @@ export default function RiskPanel() {
 
   return (
     <Sidebar
-      eyebrow="Northern Vietnam · Kim Bang"
       title="Habitat risk"
       subtitle={
         <span className="flex flex-wrap items-center gap-1.5">
