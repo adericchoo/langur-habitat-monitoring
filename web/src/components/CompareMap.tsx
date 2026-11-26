@@ -1,9 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import Map, { Layer, Source } from 'react-map-gl/maplibre'
 import type { ViewStateChangeEvent } from 'react-map-gl/maplibre'
 import type { FeatureCollection } from 'geojson'
-import { getMapColors } from '../map/mapColors'
-import { corridorSample, driverSample } from '../map/sampleLayers'
+import { corridorSample } from '../map/sampleLayers'
 import protectedAreasJson from '../map/protectedAreas.json'
 import {
   BASEMAP_BOUNDS,
@@ -12,7 +11,8 @@ import {
   resolveBasemapYearAtOrBefore,
   satelliteRaster,
 } from '../map/basemap'
-import { corridorLine, driverCircles, paOutline } from '../map/layers'
+import { corridorLineFor, protectedLine } from '../map/layers'
+import { CORRIDOR_STATUSES } from '../map/mapTokens'
 
 const protectedAreas = protectedAreasJson as FeatureCollection
 
@@ -42,7 +42,6 @@ export default function CompareMap({
   baselineYear: number
   currentYear: number
 }) {
-  const colors = useMemo(() => getMapColors(), [])
   const [view, setView] = useState<SharedView>({
     ...BASEMAP_INITIAL_VIEW,
     bearing: 0,
@@ -59,9 +58,9 @@ export default function CompareMap({
 
   return (
     <div className="relative flex h-full w-full">
-      <MapPane year={baselineYear} role="Baseline" colors={colors} view={view} onMove={onMove} />
+      <MapPane year={baselineYear} role="Baseline" view={view} onMove={onMove} />
       <div className="w-px shrink-0 bg-brd" aria-hidden />
-      <MapPane year={currentYear} role="Current" colors={colors} view={view} onMove={onMove} />
+      <MapPane year={currentYear} role="Current" view={view} onMove={onMove} />
     </div>
   )
 }
@@ -69,13 +68,11 @@ export default function CompareMap({
 function MapPane({
   year,
   role,
-  colors,
   view,
   onMove,
 }: {
   year: number
   role: string
-  colors: ReturnType<typeof getMapColors>
   view: SharedView
   onMove: (e: ViewStateChangeEvent) => void
 }) {
@@ -106,13 +103,12 @@ function MapPane({
           <Layer {...satelliteRaster} />
         </Source>
         <Source id="corridors" type="geojson" data={corridorSample}>
-          <Layer {...corridorLine(colors)} />
+          {CORRIDOR_STATUSES.map((status) => (
+            <Layer key={status} {...corridorLineFor(status)} />
+          ))}
         </Source>
         <Source id="pa" type="geojson" data={protectedAreas}>
-          <Layer {...paOutline(colors.paLine)} />
-        </Source>
-        <Source id="drivers" type="geojson" data={driverSample}>
-          <Layer {...driverCircles(colors)} />
+          <Layer {...protectedLine()} />
         </Source>
       </Map>
 

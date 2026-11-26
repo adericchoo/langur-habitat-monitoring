@@ -1,18 +1,17 @@
 import type { ReactNode } from 'react'
 
 /**
- * The Habitat-loss step reports two land-cover layers stacked: FOREST (produced
- * now — the land-cover forest class, which is also the interim habitat proxy) and
- * HABITAT (the dedicated langur-habitat class, still pending from the pipeline).
- * Both are always visible; habitat renders <HabitatPending/> until real data
- * lands, at which point it fills the same way forest does.
+ * The Habitat-loss step reports two land-cover layers stacked: FOREST (the
+ * plain-forest class, 1) and HABITAT (the karst-forest class, 2 = langur habitat).
+ * Both are now produced by the pipeline (habitat_loss.py emits a `forest` and a
+ * `habitat` track) and fill with real metrics in the single-year view.
  *
- * Frontend-only for D2: no pipeline/contract change yet. When the habitat class
- * ships, this metadata + a habitat data source are the wiring points.
+ * <HabitatPending/> below is still used by the compare-years dashboard, whose
+ * two-year interval model has not yet been wired to the real tracks.
  */
 export const LAYER_META = {
-  forest: { title: 'Forest', hint: 'land-cover forest class · interim habitat proxy' },
-  habitat: { title: 'Habitat', hint: 'dedicated langur-habitat class · pending' },
+  forest: { title: 'Forest', hint: 'plain-forest class (land cover)' },
+  habitat: { title: 'Habitat', hint: 'karst-forest class · langur habitat' },
 } as const
 
 export type HabitatLayer = keyof typeof LAYER_META
@@ -37,13 +36,14 @@ export default function LayerSection({
   )
 }
 
-/** Placeholder shown in the Habitat section until the pipeline emits the
- *  dedicated langur-habitat class. Screening-grade, intentionally empty. */
+/** Placeholder for the Habitat section of the compare-years dashboard, whose
+ *  two-year interval model is not yet wired to the real habitat track. (The
+ *  single-year view fills this section with real metrics.) */
 export function HabitatPending() {
   return (
     <div className="rounded-card border border-dashed border-brd bg-card px-4 py-6 text-center text-sm text-secondary">
-      No habitat-loss data yet — the dedicated langur-habitat class is pending from the pipeline.
-      Forest above is the interim proxy. Screening product, not confirmed loss.
+      Habitat comparison isn’t wired to the two-year view yet — switch off Compare years to see
+      the karst-forest metrics. Screening product, not confirmed loss.
     </div>
   )
 }

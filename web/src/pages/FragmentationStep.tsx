@@ -5,6 +5,7 @@ import Sidebar from '../components/Sidebar'
 import MetricCard, { type MetricCardVariant } from '../components/MetricCard'
 import { usePins } from '../report/pins'
 import { fragmentationSites } from '../samples/fragmentation'
+import { useMetricSites } from '../report/metrics'
 import type { MetricSite } from '../types/contract'
 
 interface CardSpec {
@@ -31,6 +32,9 @@ const fmt = (value: number) =>
  *  are local to this step for E1 (H1 lifts them to a shared store). Corridors
  *  on the map are E2, not this step. Sample data — metrics are upstream TODO. */
 export default function FragmentationStep() {
+  // Real pipeline metrics (fragmentation_metrics.py → web/public/data/, gitignored)
+  // when staged; otherwise the sample fallback. Same MetricSite[] shape either way.
+  const sites = useMetricSites('/data/fragmentation.json', fragmentationSites)
   const [siteId, setSiteId] = useState(fragmentationSites[0].id)
   // Year is shared with the map (via App's Outlet context), so this selector
   // also switches the satellite basemap to the nearest available year — the
@@ -38,8 +42,9 @@ export default function FragmentationStep() {
   const { mapYear: year, setMapYear: setYear } = useOutletContext<MapYearContext>()
   const { isPinned, toggle, count } = usePins()
 
-  const site: MetricSite =
-    fragmentationSites.find((s) => s.id === siteId) ?? fragmentationSites[0]
+  // Resolve the selected site; when the data source swaps (sample → real) the old
+  // id may not exist, so fall back to the first site and drive the <select> off it.
+  const site: MetricSite = sites.find((s) => s.id === siteId) ?? sites[0]
 
   // Available display years span the metric window (year_start…year_end), newest first.
   const yearStart = site.metrics[0]?.year_start ?? 2000
@@ -80,11 +85,11 @@ export default function FragmentationStep() {
           Site
         </span>
         <select
-          value={siteId}
+          value={site.id}
           onChange={(e) => setSiteId(e.target.value)}
           className="w-full rounded-pill border border-brd bg-card px-3 py-1.5 text-sm text-ink"
         >
-          {fragmentationSites.map((s) => (
+          {sites.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
             </option>
@@ -122,8 +127,8 @@ export default function FragmentationStep() {
       </div>
 
       <p className="mt-4 text-xs text-secondary">
-        Pinned figures carry into Step 05 · Report. Sample metrics — fragmentation
-        is not yet produced upstream.
+        Pinned figures carry into Step 05 · Report. Screening product — landscape
+        metrics from land-cover classification, not field-verified.
       </p>
     </Sidebar>
   )

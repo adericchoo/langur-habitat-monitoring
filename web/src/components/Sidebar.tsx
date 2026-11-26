@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import CompareControls from '../compare/CompareControls'
 
 export interface SidebarProps {
   eyebrow?: string
@@ -31,6 +32,10 @@ export default function Sidebar({
         </div>
         {headerAction ? <div className="shrink-0">{headerAction}</div> : null}
       </header>
+      {/* Fixed compare-years band — self-nulls except on the steps that support
+          compare (Habitat loss, Fragmentation) and outside the app shell (e.g.
+          /gallery). See CompareControls. */}
+      <CompareControls />
       <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
     </aside>
   )
