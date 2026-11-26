@@ -19,7 +19,9 @@ Three steps, all rule-based:
             already in place at this site (its home site) is graded "in place"
             and worded as a check on whether it is working.
   brief     a Markdown brief per site, a plain-English overview built from
-            templates (overview.py), and one JSON file for the dashboard
+            templates (overview.py), the full JSON (policy-briefs.json) and a
+            compact one for the dashboard's Policy step (dashboard.py,
+            policy-dashboard.json)
 
 The scorer's audit file carries the ranking; the hotspot attributes the
 matching reads (protection status, licence status, occupancy) come from the
@@ -39,6 +41,7 @@ from pathlib import Path
 
 import yaml
 
+import dashboard
 import overview as ov
 
 HERE = Path(__file__).resolve().parent
@@ -519,6 +522,10 @@ def run(path_scored, path_inputs, path_out, path_bank=HERE / "policy_cases.yaml"
     (out_dir / "overview.md").write_text("\n".join(md), encoding="utf-8")
     (out_dir / "policy-briefs.json").write_text(
         json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    summary = dashboard.dashboard_summary(briefs, not_briefed, scored, provenance,
+                                          payload["caveat"], cfg, site_names, inputs_by_id)
+    (out_dir / "policy-dashboard.json").write_text(
+        json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return payload
 
 

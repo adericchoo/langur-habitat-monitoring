@@ -1,5 +1,6 @@
 import { useId, useState } from 'react'
 import RiskBadge from './RiskBadge'
+import { ACTION_LABEL } from '../results/riskDashboard'
 import type { RiskDimension, RiskSite } from '../types/risk'
 
 interface RiskSiteCardProps {
@@ -9,10 +10,12 @@ interface RiskSiteCardProps {
   onTogglePin: () => void
 }
 
-/** A single habitat-risk site. Collapsed: name + risk badge + score + pin.
- *  Expanded: adds a SEPARATE confidence band and one row per TVEG dimension.
- *  Confidence is never folded into the score — a low-confidence, high-score site
- *  is flagged "verify first" and keeps its band. */
+/** A single habitat-risk site, read through its most urgent area. Collapsed:
+ *  name + risk badge + the scorer's 0–100 priority and triage action + pin.
+ *  Expanded: a SEPARATE confidence band, the scorer's top contributors ("why it
+ *  ranks here"), and one row per TVEG dimension. Confidence is never folded
+ *  into the score — a low-confidence, high-score site is flagged "verify
+ *  first" and keeps its band. */
 export default function RiskSiteCard({ site, pinned, onTogglePin }: RiskSiteCardProps) {
   const [expanded, setExpanded] = useState(false)
   const panelId = useId()
@@ -39,7 +42,12 @@ export default function RiskSiteCard({ site, pinned, onTogglePin }: RiskSiteCard
           </p>
           <div className="mt-1.5 flex items-center gap-2">
             <RiskBadge level={site.band} />
-            <span className="text-xs text-secondary">score {site.score.toFixed(2)}</span>
+            <span className="text-xs text-secondary">
+              {site.action ? `${ACTION_LABEL[site.action]} · ` : ''}
+              {site.patches !== undefined
+                ? `${site.patches} suspected quarry area${site.patches === 1 ? '' : 's'} found`
+                : `score ${site.score.toFixed(2)}`}
+            </span>
           </div>
         </button>
 
@@ -48,37 +56,48 @@ export default function RiskSiteCard({ site, pinned, onTogglePin }: RiskSiteCard
 
       {expanded ? (
         <div id={panelId} className="mt-4">
-          <ConfidenceBand confidence={site.confidence} />
+          {site.confidence.verifyFirst ? (
+            <div className="mt-3 rounded-card bg-teal-tint px-3 py-2.5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-navy">
+                Verify first
+              </p>
+              <p className="mt-0.5 text-sm text-secondary">
+                No langur records here since 2015, so the habitat-value read is an assumption.
+                Survey before acting on this score.
+              </p>
+            </div>
+          ) : null}
+          {site.why ? (
+            <div className="mt-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-teal">
+                Why it ranks here
+              </p>
+              <p className="mt-1 text-sm text-secondary">
+                The strongest signals behind this rank: {site.why}.
+              </p>
+            </div>
+          ) : null}
           <ul className="mt-4 space-y-4">
             {site.dimensions.map((dim, i) => (
               <DimensionRow key={dim.key} index={i + 1} dim={dim} />
             ))}
           </ul>
+          <p className="mt-3 text-xs text-secondary">
+            Confidence: {site.confidence.label} — {Math.round(site.confidence.score * 100)}% of
+            the data behind this score was available.
+          </p>
         </div>
       ) : null}
     </div>
   )
 }
 
-/** Separate confidence block (teal-tint). Shows the confidence label + score and,
- *  when flagged, a "verify first" note — it never changes the risk score/band. */
-function ConfidenceBand({ confidence }: { confidence: RiskSite['confidence'] }) {
-  return (
-    <div className="rounded-card bg-teal-tint px-3 py-2.5">
-      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <span className="text-xs font-semibold uppercase tracking-wide text-navy">Confidence</span>
-        <span className="text-sm font-semibold text-teal">
-          {confidence.label} · {confidence.score.toFixed(2)}
-        </span>
-        {confidence.verifyFirst ? (
-          <span className="text-xs text-secondary">— flagged to verify first, never demoted</span>
-        ) : null}
-      </div>
-    </div>
-  )
+/** The dimension's 0–1 read in plain words. Thresholds are display-only. */
+function signalWord(score: number): string {
+  return score >= 0.7 ? 'strong signal' : score >= 0.4 ? 'moderate signal' : 'weak signal'
 }
 
-/** One TVEG dimension: a teal numbered label, a provisional weight tag, the sentence. */
+/** One TVEG dimension: a teal numbered label, the signal strength, the sentence. */
 function DimensionRow({ index, dim }: { index: number; dim: RiskDimension }) {
   return (
     <li>
@@ -87,7 +106,7 @@ function DimensionRow({ index, dim }: { index: number; dim: RiskDimension }) {
           {String(index).padStart(2, '0')}&nbsp;&nbsp;{dim.label}
         </span>
         <span className="shrink-0 text-xs text-secondary">
-          score {dim.score.toFixed(2)} · w {dim.weight.toFixed(2)}
+          {signalWord(dim.score)}
         </span>
       </div>
       <p className="mt-1 text-sm text-secondary">{dim.sentence}</p>
