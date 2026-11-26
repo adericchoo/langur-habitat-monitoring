@@ -70,7 +70,6 @@ export default function HabitatLossStep() {
 
   return (
     <Sidebar
-      eyebrow="Northern Vietnam · Kim Bang"
       title="Habitat loss"
       subtitle={
         compareOn ? (

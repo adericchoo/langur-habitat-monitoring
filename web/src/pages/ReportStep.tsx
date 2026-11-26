@@ -58,7 +58,6 @@ export default function ReportStep() {
 
   return (
     <Sidebar
-      eyebrow="Northern Vietnam · Kim Bang"
       title="Report"
       subtitle="pinned items by step · screening"
       headerAction={

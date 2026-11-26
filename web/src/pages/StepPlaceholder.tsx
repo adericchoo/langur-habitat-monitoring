@@ -10,7 +10,6 @@ export default function StepPlaceholder() {
 
   return (
     <Sidebar
-      eyebrow="Northern Vietnam · Kim Bang"
       title={step?.label ?? 'Step'}
       subtitle="placeholder — coming soon"
     >
