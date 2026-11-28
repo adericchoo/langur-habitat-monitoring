@@ -14,7 +14,7 @@ export default function RiskBadge({ level }: { level: RiskLevel }) {
   const { label, cls } = RISK[level]
   return (
     <span
-      className={`inline-flex items-center rounded-pill px-2.5 py-0.5 text-xs font-semibold text-card ${cls}`}
+      className={`inline-flex items-center whitespace-nowrap rounded-pill px-2.5 py-0.5 text-xs font-semibold text-card ${cls}`}
     >
       {label} risk
     </span>

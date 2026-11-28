@@ -82,19 +82,20 @@ export default function RiskSiteCard({ site, pinned, onTogglePin }: RiskSiteCard
               <DimensionRow key={dim.key} index={i + 1} dim={dim} />
             ))}
           </ul>
-          <p className="mt-3 text-xs text-secondary">
-            Confidence: {site.confidence.label} — {Math.round(site.confidence.score * 100)}% of
-            the data behind this score was available.
-          </p>
+
         </div>
       ) : null}
     </div>
   )
 }
 
-/** The dimension's 0–1 read in plain words. Thresholds are display-only. */
-function signalWord(score: number): string {
-  return score >= 0.7 ? 'strong signal' : score >= 0.4 ? 'moderate signal' : 'weak signal'
+/** The dimension's 0–1 read in plain words, coloured by signal strength
+ *  (strong → green, moderate → amber, weak → burnt orange). Thresholds are
+ *  display-only; literal classes so Tailwind's scanner keeps them. */
+function signal(score: number): { label: string; cls: string } {
+  if (score >= 0.7) return { label: 'strong signal', cls: 'bg-map-habitat' }
+  if (score >= 0.4) return { label: 'moderate signal', cls: 'bg-map-partial' }
+  return { label: 'weak signal', cls: 'bg-map-loss' }
 }
 
 /** One TVEG dimension: a teal numbered label, the signal strength, the sentence. */
@@ -105,8 +106,10 @@ function DimensionRow({ index, dim }: { index: number; dim: RiskDimension }) {
         <span className="text-xs font-semibold uppercase tracking-wide text-teal">
           {String(index).padStart(2, '0')}&nbsp;&nbsp;{dim.label}
         </span>
-        <span className="shrink-0 text-xs text-secondary">
-          {signalWord(dim.score)}
+        <span
+          className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-pill px-2 py-0.5 text-[11px] font-semibold text-card ${signal(dim.score).cls}`}
+        >
+          {signal(dim.score).label}
         </span>
       </div>
       <p className="mt-1 text-sm text-secondary">{dim.sentence}</p>
