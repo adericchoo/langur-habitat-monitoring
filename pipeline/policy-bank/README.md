@@ -243,6 +243,42 @@ case that is missing it. Rules for curating:
 - **The summary step has not been run against a live endpoint yet**; its
   checks are covered by tests with a stubbed model.
 
+## Maintaining this step
+
+Where each kind of change lives:
+
+| You want to | Touch | Notes |
+| --- | --- | --- |
+| add or edit a policy option | `policy_cases.yaml` | follow the curation rules above; the loader refuses malformed cases |
+| change how many sites are briefed, options per brief, patches listed | `policy_config.yaml` (`max_briefs`, `max_instruments`, `max_precedents`, `top_patches_shown`) | every tunable is in this file, with a comment |
+| map a new `change_class` from the scorer | `policy_config.yaml` → `drivers` | the run stops and names any unmapped class |
+| change a site's display name | `policy_config.yaml` → `site_labels` | |
+| change the wording a triage action leads with | `policy_config.yaml` → action templates | |
+| change selection, grouping, matching or grading logic | `policy_bank.py` | docstrings follow the Method section above, step for step |
+| change the plain-English overview wording | `overview.py` | templates only — never add a clause the run's fields can't fill |
+| change the optional model summary or its checks | `narrate.py` | keep the checks; an unchecked summary must not ship |
+| change the dashboard's compact copy | `dashboard.py` | copies strings from the briefs, writes no new text; the frontend reads the committed copy at `web/src/results/policy-dashboard-2025.json` |
+
+After any change, run the tests — they cover case-bank validity (sources,
+switches, preconditions, citation markers), grading, grouping and the output
+contract on the sample data:
+
+```bash
+python -m pytest pipeline/policy-bank
+```
+
+`policy-briefs.json` is this step's contract with the dashboard: the field
+list in **Run → Output** above is what `web` consumes, so renaming or
+removing a field there needs a matching frontend change. Committed snapshots
+of real runs live in [`results/`](results/README.md) with their code and
+config versions, so a future run can be compared against what was handed
+over.
+
+The upstream fields this step reads (`priority`, `tier`, `action`,
+`g_protected`, `g_unlicensed`, `v_occupancy`, …) are defined in the
+priority-scoring step; their calculation is documented in
+[`../priority-scoring/CALCULATIONS.md`](../priority-scoring/CALCULATIONS.md).
+
 ## Security
 
 The bank and the briefs hold site names, tiers and policy text. No geometry or

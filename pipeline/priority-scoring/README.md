@@ -18,6 +18,14 @@ WDPA / site polygons   ─┘       (4a: collate)        (the contract)         
   mean across T/V/E/G, tiers P1/P2/P3. Re-running with new weights takes
   seconds and never touches a raster.
 
+Three documents cover this step; read the one that matches your question:
+
+| Document | Answers |
+| --- | --- |
+| this README | what the step is, how to run it, what the current run's limits are |
+| [READING_THE_OUTPUTS.md](READING_THE_OUTPUTS.md) | how to read the ranked list, tiers, reasons and dimensions |
+| [CALCULATIONS.md](CALCULATIONS.md) | the exact formulas, and how to change weights, anchors or indicators |
+
 The scorer writes three files into the folder of its output path:
 
 | file | for | contents |
@@ -37,8 +45,11 @@ The `hotspot_id` is what lets someone in the field find the specific patch.
 
 Like the CSVs, it contains no coordinates.
 
-The full design rationale lives in the team's framework doc
-(hotspot-priority-scoring-framework).
+**Maintaining or changing the scoring?** [CALCULATIONS.md](CALCULATIONS.md)
+gives every formula (value functions, within-dimension averaging, the
+weighted geometric mean, tiers and reasons), the design rationale behind
+them, and a checklist for each kind of change: new weights, new anchors, a
+new indicator, new ordinal vocabulary.
 
 ## Running it
 

@@ -14,5 +14,5 @@ stored in this repository.
 | Step | Folder | What it does |
 | --- | --- | --- |
 | Habitat-loss metrics | [`metrics/`](metrics/README.md) | summary metrics for the Habitat loss step |
-| Priority scoring | `priority-scoring/` | ranks change hotspots on threat, value, exposure and governance |
+| Priority scoring | [`priority-scoring/`](priority-scoring/README.md) | ranks change hotspots on threat, value, exposure and governance |
 | Policy bank | [`policy-bank/`](policy-bank/README.md) | lists sourced policy options for the highest-priority hotspots |

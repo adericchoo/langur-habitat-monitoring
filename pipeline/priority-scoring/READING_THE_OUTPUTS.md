@@ -1,9 +1,9 @@
 # Reading the priority outputs
 
 This guide explains what the scorer's outputs mean, how to read a single row,
-and why the numbers come out the way they do. The design choices behind them
-come from the team's hotspot priority scoring framework; the relevant reasoning
-is restated here so this page stands on its own.
+and why the numbers come out the way they do. It stands on its own; for the
+exact formulas behind each number, and for how to change weights, anchors or
+indicators, see [CALCULATIONS.md](CALCULATIONS.md).
 
 ## What the priority score measures
 
